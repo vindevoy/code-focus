@@ -1,0 +1,9 @@
+#!/bin/sh
+#
+# Git pre-commit hook: run fast unit tests before allowing a commit.
+# If any test fails, the commit is blocked.
+
+set -e
+
+echo "[pre-commit] Running fast unit tests..."
+./gradlew --quiet test
