@@ -1,11 +1,12 @@
+build/
+
+.gradle/
 .idea/
+.intellijPlatform/
+.kotlin/
 .vscode/
 
 *.log
 *.secret
 
 .DS_Store
-.gradle/
-.intellijPlatform/
-.kotlin/
-build/
