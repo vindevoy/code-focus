@@ -14,8 +14,6 @@
 Code Focus hides the comments and logging lines from Python code (`.py` files) in PyCharm (Community or Professional), allowing developers to focus on the code itself without the clutter of those extra, and very useful, lines.
 <!-- Plugin description end -->
 
-The text between the `<!-- Plugin description -->` and `<!-- Plugin description end -->` markers is the single source of truth: it is what the Gradle build extracts for the plugin's manifest (and therefore what appears on the JetBrains Marketplace). Keep the section to exactly one paragraph inside the markers.
-
 
 ## Compatibility
 
