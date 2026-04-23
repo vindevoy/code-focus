@@ -3,18 +3,18 @@
 
 ## Author
 
-Name:               Yves Vindevogel
-GitLab handle:      vindevoy
-E-mail:             yves.vindevogel@asynchrone.com
+- Name:               Yves Vindevogel
+- GitLab handle:      vindevoy
+- E-mail:             yves.vindevogel@asynchrone.com
 
 
 ## Purpose
 
 <!-- Plugin description -->
-Code Focus hides comments and logging lines from Python code so developers can focus on the logic without the surrounding clutter. It works on `.py` files inside PyCharm (Community or Professional).
+Code Focus hides the comments and logging lines from Python code (`.py` files) in PyCharm (Community or Professional), allowing developers to focus on the code itself without the clutter of those extra, and very useful, lines.
 <!-- Plugin description end -->
 
-This plugin must hide the comments and the logging lines from Python code (.py files). This must allow the developer to focus on the code only without the clutter of those extra, and very useful, lines.
+The text between the `<!-- Plugin description -->` and `<!-- Plugin description end -->` markers is the single source of truth: it is what the Gradle build extracts for the plugin's manifest (and therefore what appears on the JetBrains Marketplace). Keep the section to exactly one paragraph inside the markers.
 
 
 ## Compatibility
