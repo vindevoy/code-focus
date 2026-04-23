@@ -4,3 +4,8 @@
 *.log
 *.secret
 
+.DS_Store
+.gradle/
+.intellijPlatform/
+.kotlin/
+build/

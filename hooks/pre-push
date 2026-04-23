@@ -1,0 +1,9 @@
+#!/bin/sh
+#
+# Git pre-push hook: run the full test suite before allowing a push.
+# If any test fails, the push is blocked.
+
+set -e
+
+echo "[pre-push] Running full test suite..."
+./gradlew --quiet check
