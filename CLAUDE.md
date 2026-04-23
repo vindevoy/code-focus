@@ -48,8 +48,8 @@ No custom overrides.
 
 ### Remote and issue tracking
 
-- The repository is hosted on **GitLab** and kept in sync with origin
-- Issues are tracked on GitLab and used as the primary communication channel for feedback and remarks
+- The repository is hosted on **GitLab** at https://gitlab.com/asynchrone/kotlin/code-focus and kept in sync with origin
+- Issues are tracked on the same GitLab project and used as the primary communication channel for feedback and remarks
 
 ### Branching strategy
 
