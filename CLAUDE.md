@@ -108,6 +108,19 @@ Notes that Claude posts on GitLab from the user's machine are authored under the
 This applies to trace replies in discussion threads and any other note Claude creates on the project (comments on issues, merge requests, anywhere).
 
 
+### Handling comments in a loop
+
+When the user asks Claude to "loop" on an issue's comments (or invokes `/loop`), Claude polls the issue autonomously until every discussion is resolved, instead of waiting for an explicit CLI "continue" between each round. One iteration does:
+
+1. Fetch all discussions on the issue
+2. For any open discussion with a top-level comment that has no trace reply from Claude yet, handle it per the Review process above — make changes, commit, push, and post a threaded trace reply with the attribution line
+3. For any discussion where the user has added a new reply since Claude's last note, re-engage: read the reply, take the requested action, commit and push if needed, post a further threaded reply
+4. Sleep approximately 1 minute between iterations so the user has time to work on or reply to comments without Claude racing them
+5. Exit the loop only when every discussion is resolved **and** the previous iteration produced no new activity — a full idle cycle confirms nothing is in flight
+
+Until the loop exits, Claude does not need the user to type "continue" on the CLI; it polls and reacts on its own.
+
+
 ### Commit message format
 
 Format: `#<issue-number> - <Message>`
