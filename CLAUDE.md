@@ -74,6 +74,16 @@ Hotfix branches follow Gitflow conventions:
 
 Branch names use **lowercase, numbers, and dashes only**.
 
+### Branch protection
+
+Both `main` and `develop` are **protected** on GitLab:
+
+- Only **maintainers** can push to or merge into them. Developer-level accounts cannot push directly, so every change lands through a merge request.
+- **Force pushes** are disabled.
+- The branches **cannot be deleted**, so GitLab does not offer to delete them when a merge request is merged.
+
+Release, feature, bugfix, and hotfix branches are **not** protected — they are short-lived and owned by whoever is working on them.
+
 ### Workflow for each issue
 
 1. Receive the issue number from the user on the CLI
