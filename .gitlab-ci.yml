@@ -1,3 +1,4 @@
+# Code Focus — GitLab CI pipeline (SAST + Secret Detection).
 # You can override the included template(s) by including variable overrides
 # SAST customization: https://docs.gitlab.com/user/application_security/sast/#available-cicd-variables
 # Secret Detection customization: https://docs.gitlab.com/user/application_security/secret_detection/pipeline/configure/

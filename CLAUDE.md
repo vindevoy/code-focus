@@ -1,5 +1,11 @@
 # CLAUDE.md — Code Focus Plugin
 
+## Working with Claude
+
+- **Autonomous execution**: the user trusts Claude to run commands on their local machine without asking for permission first. Claude may execute Gradle tasks, shell commands, git operations, `glab` calls, `sudo apt` installs, and any other local tooling required to complete a task. Do not prompt the user for permission before a tool call.
+- **Ask questions about the project, not about permissions**: if Claude is uncertain, ask about project direction, design trade-offs, or intent — not about whether it is allowed to execute something.
+
+
 ## Project Overview
 
 Code Focus is a PyCharm plugin that hides comments and logging lines from Python code (.py files), allowing developers to focus on the code itself without visual clutter.
@@ -48,8 +54,8 @@ No custom overrides.
 
 ### Remote and issue tracking
 
-- The repository is hosted on **GitLab** and kept in sync with origin
-- Issues are tracked on GitLab and used as the primary communication channel for feedback and remarks
+- The repository is hosted on **GitLab** at https://gitlab.com/asynchrone/kotlin/code-focus and kept in sync with origin
+- Issues are tracked on the same GitLab project and used as the primary communication channel for feedback and remarks
 
 ### Branching strategy
 
@@ -83,6 +89,43 @@ Branch names use **lowercase, numbers, and dashes only**.
 11. Once accepted, the user approves and merges into `develop` (or `main` and `develop` for hotfixes)
 12. The user closes the issue manually on GitLab
 13. After confirming the MR is merged, delete the local working branch and run `git fetch --prune` to clean up the remote-tracking reference
+
+### Review process
+
+Once a merge request is opened, the user reviews the code and leaves **one comment per remark on the GitLab issue** (not the MR). Claude handles these comments in order:
+
+1. Read the comments one by one, from oldest to newest
+2. For each comment, take the needed action on the working branch:
+   - If the action produces a code change, commit it (one commit per comment is the default — combine only when the changes are trivially related)
+   - If no code change is needed, explain why in the follow-up note
+3. After handling a comment, post the follow-up note as a **reply inside the same GitLab discussion thread** as the original comment, not as a new top-level note. Threading both entries under one discussion means the user resolves a single thread per remark instead of two. The follow-up carries the remarks Claude would normally write on the CLI (what was done, what was decided, what was noticed), so the trace lives next to the feedback
+4. In that follow-up note, state whether Claude believes the remark is resolved — but **never mark the comment resolved**. Marking resolved is the user's privilege
+5. Move on to the next comment
+
+Once all comments are handled, push the new commits and notify the user on the CLI.
+
+
+### GitLab note attribution
+
+Notes that Claude posts on GitLab from the user's machine are authored under the user's GitLab username, because Claude posts via the user's personal access token. To keep authorship unambiguous, every note Claude posts **must begin with an attribution line** on its own, followed by a blank line and then the body:
+
+> _Authored by Claude — running on @vindevoy's local machine._
+
+This applies to trace replies in discussion threads and any other note Claude creates on the project (comments on issues, merge requests, anywhere).
+
+
+### Handling comments in a loop
+
+When the user asks Claude to "loop" on an issue's comments (or invokes `/loop`), Claude polls the issue autonomously until every discussion is resolved, instead of waiting for an explicit CLI "continue" between each round. One iteration does:
+
+1. Fetch all discussions on the issue
+2. For any open discussion with a top-level comment that has no trace reply from Claude yet, handle it per the Review process above — make changes, commit, push, and post a threaded trace reply with the attribution line
+3. For any discussion where the user has added a new reply since Claude's last note, re-engage: read the reply, take the requested action, commit and push if needed, post a further threaded reply
+4. Sleep approximately 1 minute between iterations so the user has time to work on or reply to comments without Claude racing them
+5. Exit the loop only when every discussion is resolved **and** the previous iteration produced no new activity — a full idle cycle confirms nothing is in flight
+
+Until the loop exits, Claude does not need the user to type "continue" on the CLI; it polls and reacts on its own.
+
 
 ### Commit message format
 
@@ -136,5 +179,18 @@ Run `./gradlew verifyPlugin` to check the plugin structure and compatibility wit
 
 ## Notes
 
-- The plugin operates on Python code, so `plugin.xml` must declare a dependency on `com.intellij.modules.python`. The scaffold does not add this automatically — it must be configured when implementing the first feature.
-- The plugin template's `build.gradle.kts` targets IntelliJ IDEA Community by default. This must be switched to PyCharm Community (e.g., `pycharmCommunity("2025.1")`) as part of the first code issue, since the plugin depends on Python-specific platform APIs.
+### Python module dependency
+
+The plugin operates on Python code, so `plugin.xml` declares a dependency on `com.intellij.modules.python`. Without this dependency the plugin cannot be loaded into PyCharm.
+
+### Build-time IDE target vs runtime compatibility
+
+The plugin targets **both PyCharm Community and Professional at runtime**, but at **build time** it compiles against PyCharm Community only. The distinction:
+
+- **Build-time dependency**: `build.gradle.kts` uses `pycharmCommunity(providers.gradleProperty("platformVersion"))`. Community is chosen because:
+  - it is free and open, so CI and any contributor can fetch it without a license;
+  - it ships the `com.intellij.modules.python` module the plugin needs;
+  - Professional is a superset of Community, so a plugin compiled against Community's platform APIs runs unchanged on Professional.
+- **Runtime compatibility**: the distributable plugin is compatible with **both** PyCharm Community and PyCharm Professional. The supported range is defined by `sinceBuild` / `untilBuild` in `gradle.properties` (`251` — `261.*`) together with the `com.intellij.modules.python` dependency declared in `plugin.xml`.
+
+This is why the CLI and Gradle output reference "PyCharm Community" while the user-facing compatibility statement says "Community or Professional" — both are accurate, they describe different phases.
