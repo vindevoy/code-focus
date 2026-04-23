@@ -1,0 +1,31 @@
+#!/bin/sh
+#
+# Git commit-msg hook to enforce commit message format:
+# Format: #x - Commit message
+# Where x is a positive integer and message starts with a capital letter
+
+commit_msg_file=$1
+commit_msg=$(cat "$commit_msg_file")
+
+# Regular expression to match the required format
+# #<positive integer> - <Capital letter><rest of message>
+pattern="^#[1-9][0-9]* - [A-Z].*$"
+
+if ! echo "$commit_msg" | grep -qE "$pattern"; then
+    echo "ERROR: Commit message does not follow the required format."
+    echo ""
+    echo "Required format: #x - Commit message"
+    echo "  - x must be a positive integer (1, 2, 3, ...)"
+    echo "  - Message must start with a capital letter"
+    echo ""
+    echo "Your commit message:"
+    echo "  $commit_msg"
+    echo ""
+    echo "Examples of valid messages:"
+    echo "  #1 - Initial commit"
+    echo "  #42 - Fix bug in authentication"
+    echo "  #123 - Add new feature for data export"
+    exit 1
+fi
+
+exit 0
