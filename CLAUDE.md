@@ -99,6 +99,15 @@ Once a merge request is opened, the user reviews the code and leaves **one comme
 Once all comments are handled, push the new commits and notify the user on the CLI.
 
 
+### GitLab note attribution
+
+Notes that Claude posts on GitLab from the user's machine are authored under the user's GitLab username, because Claude posts via the user's personal access token. To keep authorship unambiguous, every note Claude posts **must begin with an attribution line** on its own, followed by a blank line and then the body:
+
+> _Authored by Claude — running on @vindevoy's local machine._
+
+This applies to trace replies in discussion threads and any other note Claude creates on the project (comments on issues, merge requests, anywhere).
+
+
 ### Commit message format
 
 Format: `#<issue-number> - <Message>`
