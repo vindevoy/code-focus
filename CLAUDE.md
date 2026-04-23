@@ -151,5 +151,18 @@ Run `./gradlew verifyPlugin` to check the plugin structure and compatibility wit
 
 ## Notes
 
-- The plugin operates on Python code, so `plugin.xml` must declare a dependency on `com.intellij.modules.python`. The scaffold does not add this automatically — it must be configured when implementing the first feature.
-- The plugin template's `build.gradle.kts` targets IntelliJ IDEA Community by default. This must be switched to PyCharm Community (e.g., `pycharmCommunity("2025.1")`) as part of the first code issue, since the plugin depends on Python-specific platform APIs.
+### Python module dependency
+
+The plugin operates on Python code, so `plugin.xml` declares a dependency on `com.intellij.modules.python`. Without this dependency the plugin cannot be loaded into PyCharm.
+
+### Build-time IDE target vs runtime compatibility
+
+The plugin targets **both PyCharm Community and Professional at runtime**, but at **build time** it compiles against PyCharm Community only. The distinction:
+
+- **Build-time dependency**: `build.gradle.kts` uses `pycharmCommunity(providers.gradleProperty("platformVersion"))`. Community is chosen because:
+  - it is free and open, so CI and any contributor can fetch it without a license;
+  - it ships the `com.intellij.modules.python` module the plugin needs;
+  - Professional is a superset of Community, so a plugin compiled against Community's platform APIs runs unchanged on Professional.
+- **Runtime compatibility**: the distributable plugin is compatible with **both** PyCharm Community and PyCharm Professional. The supported range is defined by `sinceBuild` / `untilBuild` in `gradle.properties` (`251` — `261.*`) together with the `com.intellij.modules.python` dependency declared in `plugin.xml`.
+
+This is why the CLI and Gradle output reference "PyCharm Community" while the user-facing compatibility statement says "Community or Professional" — both are accurate, they describe different phases.
