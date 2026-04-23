@@ -92,7 +92,7 @@ Once a merge request is opened, the user reviews the code and leaves **one comme
 2. For each comment, take the needed action on the working branch:
    - If the action produces a code change, commit it (one commit per comment is the default — combine only when the changes are trivially related)
    - If no code change is needed, explain why in the follow-up note
-3. After handling a comment, add a follow-up note on the issue that references the original comment. The note carries the remarks Claude would normally write on the CLI (what was done, what was decided, what was noticed), so the trace lives next to the feedback
+3. After handling a comment, post the follow-up note as a **reply inside the same GitLab discussion thread** as the original comment, not as a new top-level note. Threading both entries under one discussion means the user resolves a single thread per remark instead of two. The follow-up carries the remarks Claude would normally write on the CLI (what was done, what was decided, what was noticed), so the trace lives next to the feedback
 4. In that follow-up note, state whether Claude believes the remark is resolved — but **never mark the comment resolved**. Marking resolved is the user's privilege
 5. Move on to the next comment
 
