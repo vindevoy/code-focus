@@ -58,6 +58,7 @@
       "Bash(cat >> /tmp/*)",
       "Bash(chmod +x hooks/*)",
       "Bash(chmod +x ./hooks/*)",
+      "Bash(chmod +x *)",
 
       "Bash(fish -c *)",
 
