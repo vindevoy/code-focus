@@ -3,6 +3,8 @@
     "allow": [
       "Bash(./gradlew *)",
       "Bash(JAVA_HOME=* ./gradlew *)",
+      "Bash(JAVA_HOME=/home/* *)",
+      "Bash(JAVA_HOME=* git *)",
       "Bash(./hooks/*)",
 
       "Bash(git status*)",
