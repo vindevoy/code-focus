@@ -5,6 +5,18 @@
 - **Autonomous execution**: the user trusts Claude to run commands on their local machine without asking for permission first. Claude may execute Gradle tasks, shell commands, git operations, `glab` calls, `sudo apt` installs, and any other local tooling required to complete a task. Do not prompt the user for permission before a tool call.
 - **Ask questions about the project, not about permissions**: if Claude is uncertain, ask about project direction, design trade-offs, or intent — not about whether it is allowed to execute something.
 
+### Claude Code permissions
+
+The project's allow list lives in **`.claude/settings.json`** and is committed to the repo so it travels across machines. It pre-approves the commands Claude needs to drive this project — Gradle tasks, `git`, `glab`, `python3 …`, common read-only shell utilities, the IDE-bundled JBRs, and reads under the project, `~/.gradle`, `~/.claude`, `~/.config`, and `~/.local/share/JetBrains`.
+
+If Claude needs a new command shape that isn't covered:
+
+1. Prefer the **broadest sensible prefix** (e.g. `Bash(python3 *)`, not one entry per script). This is the whole point of committing the file — a narrow allow that has to be re-typed on every variation defeats the goal.
+2. Add the entry to `.claude/settings.json` (committed, shared across machines), **not** `.claude/settings.local.json` (per-machine, gitignored). Only use the local file for genuinely machine-specific paths or sensitive entries.
+3. Avoid broad allows for destructive verbs that this project doesn't need (`rm -rf`, `sudo *`, network fetchers like `curl */wget *`). Keep those prompted.
+
+`.gitignore` is set up so only `.claude/settings.json` is tracked; all other files under `.claude/` (including `settings.local.json` and any runtime state) stay local.
+
 
 ## Project Overview
 

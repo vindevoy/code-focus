@@ -10,3 +10,8 @@ build/
 *.secret
 
 .DS_Store
+
+# Claude Code: commit project-wide settings.json so the allow list syncs across machines.
+# Everything else under .claude/ is per-machine state and stays local.
+.claude/*
+!.claude/settings.json
