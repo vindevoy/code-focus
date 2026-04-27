@@ -203,6 +203,31 @@ Examples:
 - `#2 - Add comment folding provider`
 - `#15 - Fix regex pattern for multiline comments`
 
+### Merge commit format
+
+The GitLab project's `merge_commit_template` is set so the merge commit subject reuses the MR title verbatim:
+
+```
+%{title}
+
+Merge branch '%{source_branch}' into '%{target_branch}'
+
+See merge request %{reference}
+```
+
+Because every MR title follows the `#<issue-number> - <Message>` convention, the resulting merge commit subject does too — keeping `git log --oneline` consistent with the rest of the repo and with the `commit-msg` hook regex (even though the hook only runs on local commits, not on GitLab-side merges).
+
+The "Merge branch '...' into '...'" detail moves to the body. GitLab cannot produce a subject of the form `#<num> - Merge branch '...'` because no placeholder yields just `#<num>` — the closest workaround would force a "Closes" prefix from `%{issues}`, which would break the hook format. Hand-editing at merge time is no longer needed.
+
+To inspect or change the template:
+```sh
+# read
+glab api projects/asynchrone%2Fkotlin%2Fcode-focus | python3 -c "import json,sys; print(json.load(sys.stdin)['merge_commit_template'])"
+
+# write (template body in /tmp/template.txt)
+glab api projects/asynchrone%2Fkotlin%2Fcode-focus -X PUT -F "merge_commit_template=@/tmp/template.txt"
+```
+
 
 ## Testing
 
