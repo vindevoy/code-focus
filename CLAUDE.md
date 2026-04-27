@@ -116,7 +116,13 @@ Release, feature, bugfix, and hotfix branches are **not** protected — they are
 10. The user reviews and tests — feedback goes into the GitLab issue
 11. Once accepted, the user approves and merges into `develop` (or `main` and `develop` for hotfixes)
 12. The user closes the issue manually on GitLab
-13. After confirming the MR is merged, delete the local working branch and run `git fetch --prune` to clean up the remote-tracking reference
+13. After confirming the MR is merged, **and before starting the next issue**, clean up the local branch in the same response:
+    ```sh
+    git checkout develop && git pull --ff-only origin develop \
+      && git branch -d <merged-branch> \
+      && git fetch --prune
+    ```
+    Use `git branch -d` (lowercase) so it refuses to delete an unmerged branch — that is the safety we want. If multiple merged branches piled up across rounds, run `git branch --merged develop | grep -v develop` to find them and delete them in one batch. Don't carry stale local branches into the next round
 
 ### Review process
 
@@ -132,6 +138,36 @@ Once a merge request is opened, the user reviews the code and leaves **one comme
 
 Once all comments are handled, push the new commits and notify the user on the CLI.
 
+
+### Creating MRs and posting GitLab notes
+
+For anything that takes a multi-line markdown body — opening a merge request, posting a note on an issue or discussion thread — **write the body to a temp file with the `Write` tool, then upload it via `glab api` with `-F field=@/tmp/file.md`**. Do **not** use `--description "$(cat /tmp/file.md)"` style command substitution: Claude Code's bash parser fails with "Unhandled node type: string" on multi-line `$()` substitutions, which interrupts the call.
+
+Recipes:
+
+- **Create an MR**:
+  ```sh
+  glab api projects/asynchrone%2Fkotlin%2Fcode-focus/merge_requests -X POST \
+    -F "description=@/tmp/mr-body.md" \
+    -f source_branch=<branch> \
+    -f target_branch=develop \
+    -f title="<title>" \
+    -f remove_source_branch=false
+  ```
+- **Post a note on an issue**:
+  ```sh
+  glab api projects/asynchrone%2Fkotlin%2Fcode-focus/issues/<n>/notes -X POST \
+    -F "body=@/tmp/note.md"
+  ```
+- **Post a threaded reply in a discussion**:
+  ```sh
+  glab api projects/asynchrone%2Fkotlin%2Fcode-focus/issues/<n>/discussions/<full-discussion-id>/notes -X POST \
+    -F "body=@/tmp/reply.md"
+  ```
+
+The full discussion ID is the SHA-style string returned by the discussions endpoint, not a truncated prefix.
+
+For one-line notes that don't need markdown formatting, the inline `-F "body=…"` form is fine and doesn't trip the parser.
 
 ### GitLab note attribution
 
