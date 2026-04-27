@@ -11,34 +11,35 @@ import javax.swing.JLabel
 
 class ShowCommentsToggleTest {
     @Test
-    fun `toggle starts in the off state`() {
+    fun `toggle defaults to on so comments are visible by default`() {
         val toggle = ShowCommentsToggle()
-        assertFalse(toggle.isOn)
+        assertTrue(toggle.isOn)
+        assertEquals("Comments are shown. Click to hide.", toggle.toolTipText)
     }
 
     @Test
     fun `setting isOn flips the state and updates the tooltip`() {
         val toggle = ShowCommentsToggle()
 
-        toggle.isOn = true
-        assertTrue(toggle.isOn)
-        assertEquals("Comments are shown. Click to hide.", toggle.toolTipText)
-
         toggle.isOn = false
         assertFalse(toggle.isOn)
         assertEquals("Comments are hidden. Click to show.", toggle.toolTipText)
+
+        toggle.isOn = true
+        assertTrue(toggle.isOn)
+        assertEquals("Comments are shown. Click to hide.", toggle.toolTipText)
     }
 
     @Test
     fun `clicking the toggle flips the state`() {
         val toggle = ShowCommentsToggle()
-        assertFalse(toggle.isOn)
-
-        click(toggle)
         assertTrue(toggle.isOn)
 
         click(toggle)
         assertFalse(toggle.isOn)
+
+        click(toggle)
+        assertTrue(toggle.isOn)
     }
 
     @Test

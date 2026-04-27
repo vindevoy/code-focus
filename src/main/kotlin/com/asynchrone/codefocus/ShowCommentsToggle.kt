@@ -1,6 +1,16 @@
 package com.asynchrone.codefocus
 
+import com.intellij.openapi.editor.Document
+import com.intellij.openapi.editor.Editor
+import com.intellij.openapi.editor.FoldRegion
+import com.intellij.openapi.util.Key
+import com.intellij.openapi.util.TextRange
+import com.intellij.psi.PsiComment
+import com.intellij.psi.PsiDocumentManager
+import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.util.ui.JBUI
+import com.jetbrains.python.psi.PyExpressionStatement
+import com.jetbrains.python.psi.PyStringLiteralExpression
 import java.awt.Color
 import java.awt.Cursor
 import java.awt.Dimension
@@ -15,22 +25,29 @@ import javax.swing.JLabel
 import javax.swing.JPanel
 
 /**
- * Slide-toggle pill widget for the "Show Comments" switch.
+ * Slide-toggle pill for the "Show Comments" switch.
  *
- * Issue #5 covers the visual part only — clicking flips the pill's state and
- * tooltip but does not affect the editor's contents. State is held per
- * instance and is therefore implicitly scoped to the editor that owns it.
+ * On is the default — comments stay visible. Off folds every Python comment
+ * with an empty placeholder so it disappears from view without touching the
+ * file. State is persisted on the [Editor] via [STATE_KEY] so a re-created
+ * toggle picks up the previous choice.
  */
-class ShowCommentsToggle : JPanel(FlowLayout(FlowLayout.RIGHT, JBUI.scale(6), JBUI.scale(1))) {
+class ShowCommentsToggle(
+    private val editor: Editor? = null,
+) : JPanel(FlowLayout(FlowLayout.RIGHT, JBUI.scale(6), JBUI.scale(1))) {
     private val pill = Pill()
     private val label = JLabel(CodeFocusBundle.message("toggle.showComments.label"))
+    private val foldRegions = mutableListOf<FoldRegion>()
 
     var isOn: Boolean
         get() = pill.isOn
         set(value) {
+            if (pill.isOn == value) return
             pill.isOn = value
             pill.repaint()
             updateTooltip()
+            editor?.putUserData(STATE_KEY, value)
+            applyToEditor()
         }
 
     init {
@@ -50,7 +67,10 @@ class ShowCommentsToggle : JPanel(FlowLayout(FlowLayout.RIGHT, JBUI.scale(6), JB
         pill.addMouseListener(click)
         label.addMouseListener(click)
 
+        val initial = editor?.getUserData(STATE_KEY) ?: true
+        pill.isOn = initial
         updateTooltip()
+        if (!initial) applyToEditor()
     }
 
     private fun updateTooltip() {
@@ -60,8 +80,63 @@ class ShowCommentsToggle : JPanel(FlowLayout(FlowLayout.RIGHT, JBUI.scale(6), JB
         label.toolTipText = toolTipText
     }
 
+    private fun applyToEditor() {
+        val ed = editor ?: return
+        val model = ed.foldingModel
+        model.runBatchFoldingOperation {
+            for (r in foldRegions) {
+                if (r.isValid) model.removeFoldRegion(r)
+            }
+            foldRegions.clear()
+
+            if (pill.isOn) return@runBatchFoldingOperation
+
+            val project = ed.project ?: return@runBatchFoldingOperation
+            val psiFile =
+                PsiDocumentManager.getInstance(project).getPsiFile(ed.document)
+                    ?: return@runBatchFoldingOperation
+
+            val ranges = mutableListOf<TextRange>()
+            for (comment in PsiTreeUtil.findChildrenOfType(psiFile, PsiComment::class.java)) {
+                ranges += comment.textRange
+            }
+            for (stmt in PsiTreeUtil.findChildrenOfType(psiFile, PyExpressionStatement::class.java)) {
+                if (stmt.expression is PyStringLiteralExpression) {
+                    ranges += stmt.textRange
+                }
+            }
+
+            for (range in ranges) {
+                val (start, end) = expandRange(ed.document, range)
+                if (start >= end) continue
+                val region = model.addFoldRegion(start, end, "") ?: continue
+                region.isExpanded = false
+                foldRegions.add(region)
+            }
+        }
+    }
+
+    private fun expandRange(
+        document: Document,
+        range: TextRange,
+    ): Pair<Int, Int> {
+        val lineStart = document.getLineStartOffset(document.getLineNumber(range.startOffset))
+        val prefix = document.getText(TextRange(lineStart, range.startOffset))
+        if (prefix.any { !it.isWhitespace() }) {
+            return range.startOffset to range.endOffset
+        }
+        val end = range.endOffset
+        val withNewline =
+            if (end < document.textLength && document.charsSequence[end] == '\n') {
+                end + 1
+            } else {
+                end
+            }
+        return lineStart to withNewline
+    }
+
     private class Pill : JComponent() {
-        var isOn: Boolean = false
+        var isOn: Boolean = true
 
         init {
             val size = Dimension(JBUI.scale(26), JBUI.scale(14))
@@ -93,5 +168,9 @@ class ShowCommentsToggle : JPanel(FlowLayout(FlowLayout.RIGHT, JBUI.scale(6), JB
             private val ON_COLOR = Color(0x4FAEEF)
             private val OFF_COLOR = Color(0x9AA0A6)
         }
+    }
+
+    companion object {
+        private val STATE_KEY = Key.create<Boolean>("codefocus.showComments.isOn")
     }
 }

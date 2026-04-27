@@ -105,8 +105,8 @@ Release, feature, bugfix, and hotfix branches are **not** protected — they are
 5. Implement the changes, committing as you go
 6. Tests run automatically before each commit (pre-commit hook) and full suite before each push (pre-push hook)
 7. Push commits to origin
-8. Notify the user on the CLI that the work is ready for review
-9. Claude creates a merge request on GitLab — Claude never approves or merges it
+8. Notify the user on the CLI **and** post a status note on the GitLab issue that the work is ready for review. **All status updates and progress notes go on the issue, not on a merge request** — keep the conversation in one place so feedback does not scatter
+9. **Wait for the user to give the explicit order to create the merge request.** Claude does **not** create the MR autonomously, even when the work is ready. When the user says so, Claude opens the MR with `glab mr create` against `develop` (or `main` for hotfixes) — and never approves or merges it
 10. The user reviews and tests — feedback goes into the GitLab issue
 11. Once accepted, the user approves and merges into `develop` (or `main` and `develop` for hotfixes)
 12. The user closes the issue manually on GitLab

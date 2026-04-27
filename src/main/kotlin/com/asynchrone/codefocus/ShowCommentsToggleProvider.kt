@@ -19,7 +19,7 @@ class ShowCommentsToggleProvider : EditorNotificationProvider {
         file: VirtualFile,
     ): Function<in FileEditor, out JComponent?>? {
         if (!isPython(file)) return null
-        return Function { editor -> if (editor is TextEditor) ShowCommentsToggle() else null }
+        return Function { editor -> if (editor is TextEditor) ShowCommentsToggle(editor.editor) else null }
     }
 
     private fun isPython(file: VirtualFile): Boolean = file.extension.equals("py", ignoreCase = true)
