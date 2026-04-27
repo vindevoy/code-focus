@@ -51,6 +51,8 @@
       "Bash(false)",
 
       "Bash(rm /tmp/*)",
+      "Bash(cat > /tmp/*)",
+      "Bash(cat >> /tmp/*)",
       "Bash(chmod +x hooks/*)",
       "Bash(chmod +x ./hooks/*)",
 
