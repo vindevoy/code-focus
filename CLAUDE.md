@@ -134,7 +134,8 @@ Release, feature, bugfix, and hotfix branches are **not** protected — they are
 6. Tests run automatically before each commit (pre-commit hook) and full suite before each push (pre-push hook)
 7. Push commits to origin
 8. Notify the user on the CLI **and** post a status note on the GitLab issue that the work is ready for review. **All status updates and progress notes go on the issue, not on a merge request** — keep the conversation in one place so feedback does not scatter
-9. **Wait for the user to give the explicit order to create the merge request.** Claude does **not** create the MR autonomously, even when the work is ready. When the user says so, Claude opens the MR with `glab mr create` against `develop` (or `main` for hotfixes) — and never approves or merges it
+9. **Open the merge request immediately** after the ready note via `glab api projects/<id>/merge_requests -X POST -F "description=@/tmp/file.md" …` against `develop` (or `main` for hotfixes), with `remove_source_branch=true`. Claude never approves or merges it. (Earlier convention required waiting for the user's explicit "make MR" order — that has been relaxed since the issue-only review-comment convention removed the scatter problem.)
+9a. **Move on to the next open issue right away** once the MR is open — branch from the current `develop` (which may not yet contain the in-flight MR's changes; that's fine, branches stack). The user no longer needs to type "next" between rounds. When the user merges an in-flight MR, fast-forward `develop` and prune branches at the start of the next round per step 13
 10. The user reviews and tests — feedback goes into the GitLab issue
 11. Once accepted, the user approves and merges into `develop` (or `main` and `develop` for hotfixes)
 12. The user closes the issue manually on GitLab
