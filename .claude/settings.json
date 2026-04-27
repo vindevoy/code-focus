@@ -2,6 +2,7 @@
   "permissions": {
     "allow": [
       "Bash(./gradlew *)",
+      "Bash(JAVA_HOME=* ./gradlew *)",
       "Bash(./hooks/*)",
 
       "Bash(git status*)",
