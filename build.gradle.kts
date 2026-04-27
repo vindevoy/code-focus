@@ -30,6 +30,7 @@ dependencies {
 
     intellijPlatform {
         pycharmCommunity(providers.gradleProperty("platformVersion"))
+        bundledPlugin("PythonCore")
     }
 }
 

@@ -9,6 +9,8 @@ import com.intellij.psi.PsiComment
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.util.ui.JBUI
+import com.jetbrains.python.psi.PyExpressionStatement
+import com.jetbrains.python.psi.PyStringLiteralExpression
 import java.awt.Color
 import java.awt.Cursor
 import java.awt.Dimension
@@ -94,8 +96,18 @@ class ShowCommentsToggle(
                 PsiDocumentManager.getInstance(project).getPsiFile(ed.document)
                     ?: return@runBatchFoldingOperation
 
+            val ranges = mutableListOf<TextRange>()
             for (comment in PsiTreeUtil.findChildrenOfType(psiFile, PsiComment::class.java)) {
-                val (start, end) = expandRange(ed.document, comment.textRange)
+                ranges += comment.textRange
+            }
+            for (stmt in PsiTreeUtil.findChildrenOfType(psiFile, PyExpressionStatement::class.java)) {
+                if (stmt.expression is PyStringLiteralExpression) {
+                    ranges += stmt.textRange
+                }
+            }
+
+            for (range in ranges) {
+                val (start, end) = expandRange(ed.document, range)
                 if (start >= end) continue
                 val region = model.addFoldRegion(start, end, "") ?: continue
                 region.isExpanded = false
