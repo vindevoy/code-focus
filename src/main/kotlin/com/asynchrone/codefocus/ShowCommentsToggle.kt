@@ -21,7 +21,7 @@ import javax.swing.JPanel
  * tooltip but does not affect the editor's contents. State is held per
  * instance and is therefore implicitly scoped to the editor that owns it.
  */
-class ShowCommentsToggle : JPanel(FlowLayout(FlowLayout.LEFT, JBUI.scale(8), JBUI.scale(2))) {
+class ShowCommentsToggle : JPanel(FlowLayout(FlowLayout.RIGHT, JBUI.scale(6), JBUI.scale(1))) {
     private val pill = Pill()
     private val label = JLabel(CodeFocusBundle.message("toggle.showComments.label"))
 
@@ -35,10 +35,10 @@ class ShowCommentsToggle : JPanel(FlowLayout(FlowLayout.LEFT, JBUI.scale(8), JBU
 
     init {
         isOpaque = false
-        border = JBUI.Borders.empty(2, 8)
+        border = JBUI.Borders.empty(1, 6)
         cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
-        add(pill)
         add(label)
+        add(pill)
 
         val click =
             object : MouseAdapter() {
@@ -64,7 +64,7 @@ class ShowCommentsToggle : JPanel(FlowLayout(FlowLayout.LEFT, JBUI.scale(8), JBU
         var isOn: Boolean = false
 
         init {
-            val size = Dimension(JBUI.scale(36), JBUI.scale(20))
+            val size = Dimension(JBUI.scale(26), JBUI.scale(14))
             preferredSize = size
             minimumSize = size
             maximumSize = size
@@ -79,10 +79,11 @@ class ShowCommentsToggle : JPanel(FlowLayout(FlowLayout.LEFT, JBUI.scale(8), JBU
                 g2.color = if (isOn) ON_COLOR else OFF_COLOR
                 g2.fillRoundRect(0, 0, width - 1, height - 1, arc, arc)
 
-                val knob = height - JBUI.scale(6)
-                val knobX = if (isOn) width - knob - JBUI.scale(3) else JBUI.scale(3)
+                val inset = JBUI.scale(2)
+                val knob = height - inset * 2
+                val knobX = if (isOn) width - knob - inset else inset
                 g2.color = Color.WHITE
-                g2.fillOval(knobX, JBUI.scale(3), knob, knob)
+                g2.fillOval(knobX, inset, knob, knob)
             } finally {
                 g2.dispose()
             }
