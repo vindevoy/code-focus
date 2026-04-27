@@ -17,6 +17,12 @@ If Claude needs a new command shape that isn't covered:
 
 `.gitignore` is set up so only `.claude/settings.json` is tracked; all other files under `.claude/` (including `settings.local.json` and any runtime state) stay local.
 
+### Avoid `~` in Bash assignments
+
+Claude Code flags `~` on the right-hand side of a bash assignment with a "Tilde in assignment value — bash may expand at assignment time" prompt, which interrupts every invocation. Use **absolute paths** (e.g. `/home/vindevoy/.local/share/JetBrains/Toolbox/apps/pycharm/jbr`) or `$HOME/...` instead of `~/...` when writing bash commands — both for `export VAR=...` and for direct binary invocations. The allow patterns in `.claude/settings.json` are already written with absolute paths to match.
+
+Better still: set `JAVA_HOME` (and similar) persistently in `~/.profile` so it never needs to be exported inline. The fish shell side is already covered in `~/.config/fish/config.fish`, but bash sub-shells used by tooling don't inherit fish vars.
+
 
 ## Project Overview
 
