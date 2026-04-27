@@ -56,8 +56,8 @@
 
       "Bash(fish -c *)",
 
-      "Bash(~/.local/share/JetBrains/Toolbox/apps/*/jbr/bin/java *)",
-      "Bash(~/.local/share/JetBrains/Toolbox/apps/*/jbr/bin/javac *)",
+      "Bash(/home/vindevoy/.local/share/JetBrains/Toolbox/apps/*/jbr/bin/java *)",
+      "Bash(/home/vindevoy/.local/share/JetBrains/Toolbox/apps/*/jbr/bin/javac *)",
 
       "Read(//home/vindevoy/Development/Kotlin/code-focus/**)",
       "Read(//home/vindevoy/.gradle/**)",
