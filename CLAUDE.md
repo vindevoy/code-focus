@@ -145,14 +145,14 @@ For anything that takes a multi-line markdown body — opening a merge request, 
 
 Recipes:
 
-- **Create an MR**:
+- **Create an MR**: always pass `remove_source_branch=true` so GitLab proposes deleting the source branch when the MR is merged. Feature/bugfix/hotfix branches are short-lived; leaving them around clutters the remote.
   ```sh
   glab api projects/asynchrone%2Fkotlin%2Fcode-focus/merge_requests -X POST \
     -F "description=@/tmp/mr-body.md" \
     -f source_branch=<branch> \
     -f target_branch=develop \
     -f title="<title>" \
-    -f remove_source_branch=false
+    -f remove_source_branch=true
   ```
 - **Post a note on an issue**:
   ```sh
