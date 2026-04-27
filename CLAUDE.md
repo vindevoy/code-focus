@@ -23,6 +23,18 @@ Claude Code flags `~` on the right-hand side of a bash assignment with a "Tilde 
 
 Better still: set `JAVA_HOME` (and similar) persistently in `~/.profile` so it never needs to be exported inline. The fish shell side is already covered in `~/.config/fish/config.fish`, but bash sub-shells used by tooling don't inherit fish vars.
 
+### Running Gradle without tripping the simple-expansion prompt
+
+Claude Code also flags assignment values that contain a `$VAR` expansion (the "Contains simple expansion" prompt). The pattern that kept triggering it was the chained `export … && export PATH=$JAVA_HOME/bin:$PATH && ./gradlew …` prefix — `$JAVA_HOME` and `$PATH` are simple expansions in assignment values.
+
+The Gradle wrapper only needs `JAVA_HOME`; it does not need `/jbr/bin` on `PATH`. Use a **single-command var prefix** with an absolute path, no chained exports:
+
+```sh
+JAVA_HOME=/home/vindevoy/.local/share/JetBrains/Toolbox/apps/pycharm/jbr ./gradlew ktlintCheck test
+```
+
+That command has no `$VAR` and is pre-approved in `.claude/settings.json` via the `Bash(JAVA_HOME=* ./gradlew *)` pattern, so it runs without prompting. Reserve `export … && export PATH=…` only for interactive sessions where it matters.
+
 
 ## Project Overview
 
