@@ -9,6 +9,7 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.util.ui.JBUI
 import com.jetbrains.python.psi.PyClass
+import com.jetbrains.python.psi.PyDecoratable
 import com.jetbrains.python.psi.PyFunction
 import java.awt.Color
 import java.awt.Cursor
@@ -145,18 +146,27 @@ class ShowBlankLinesToggle(
         document: Document,
     ): Set<Int> {
         val protected = mutableSetOf<Int>()
-        val topLevel =
+        val all =
             PsiTreeUtil
                 .findChildrenOfAnyType(psiFile, PyFunction::class.java, PyClass::class.java)
-                .filter { it.parent === psiFile }
-        for (def in topLevel) {
-            val startLine = document.getLineNumber(def.textRange.startOffset)
+        for (def in all) {
+            val buffer = if (def.parent === psiFile) 2 else 1
+            val startLine = document.getLineNumber(effectiveStartOffset(def))
             val endLine = document.getLineNumber(def.textRange.endOffset)
-            for (l in (startLine - 2).coerceAtLeast(0) until startLine) protected += l
+            for (l in (startLine - buffer).coerceAtLeast(0) until startLine) protected += l
             val maxLine = document.lineCount - 1
-            for (l in (endLine + 1)..(endLine + 2).coerceAtMost(maxLine)) protected += l
+            for (l in (endLine + 1)..(endLine + buffer).coerceAtMost(maxLine)) protected += l
         }
         return protected
+    }
+
+    private fun effectiveStartOffset(def: PsiElement): Int {
+        val base = def.textRange.startOffset
+        if (def is PyDecoratable) {
+            val list = def.decoratorList
+            if (list != null) return minOf(base, list.textRange.startOffset)
+        }
+        return base
     }
 
     private class Pill : JComponent() {
