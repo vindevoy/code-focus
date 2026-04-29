@@ -7,6 +7,7 @@ Used as a fixture for the "Show Comments" and "Show Blank Lines" pills in PyChar
 # A second consecutive standalone comment so PyCharm's grouped-comment fold has a chance to kick in.
 
 import json  # inline comment after a stdlib import
+import logging
 import os
 import sys
 
@@ -22,6 +23,8 @@ DEFAULT_NAME = "code-focus"
 # Standalone comment between two top-level constants.
 # Followed by a second one to form a 2-line group.
 TIMEOUT_SECONDS = 30
+
+logger = logging.getLogger(__name__)
 
 
 def fetch(url: str, retries: int = MAX_RETRIES) -> dict:
@@ -47,7 +50,7 @@ def fetch(url: str, retries: int = MAX_RETRIES) -> dict:
 
             # Two consecutive standalone comments deep inside a function,
             # to verify that grouped-comment folding works at depth.
-            print(f"retry {attempt} for {url}: {exc}")
+            logger.warning("retry %d for %s: %s", attempt, url, exc)
 
     raise RuntimeError(f"giving up on {url} after {retries} attempts") from last_error
 
@@ -93,6 +96,7 @@ def main() -> int:
         return 1
 
     path = Path(sys.argv[0]).resolve()
+    logger.info("running with %s", path)
     print(path)  # inline comment on the only print
 
     return 0

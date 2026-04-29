@@ -132,6 +132,21 @@ def main() -> int:
 - The repository is hosted on **GitLab** at https://gitlab.com/asynchrone/kotlin/code-focus and kept in sync with origin
 - Issues are tracked on the same GitLab project and used as the primary communication channel for feedback and remarks
 
+### Document everything on the issue
+
+**Every meaningful action Claude takes on an issue must be reflected on that issue.** The CLI transcript is ephemeral — the GitLab issue is the durable trace and the only place the user (or a future Claude session) can review what happened, in what order, and why.
+
+This applies to all of:
+
+- creating or rebasing the branch (mention conflicts, what was kept, what was dropped);
+- each commit's intent and the files it touches (one note can cover several related commits, but the per-commit subjects should still be listed so they can be cross-referenced with `git log`);
+- any architectural decision or rule discovered along the way (the same explanation Claude would otherwise give on the CLI);
+- any caveat the reviewer needs to know before testing (manual recovery steps, fixture changes, behaviour differences).
+
+A reasonable rhythm is one consolidated note after each batch of related commits, plus a final "ready for review" note. Don't wait until the work is finished to start writing — by then, important context has already been lost from the CLI.
+
+Notes go on the issue itself (top-level note or threaded reply inside an existing discussion when the work resolves a specific remark), **never on the merge request**, so feedback and traceability stay in one place. Every note carries the attribution line described in [GitLab note attribution](#gitlab-note-attribution).
+
 ### Branching strategy
 
 - **main**: Production-ready code. Merges come from release branches only

@@ -26,6 +26,7 @@ class CodeFocusToggleState : PersistentStateComponent<CodeFocusToggleState.State
         var showCommentsByFile: MutableMap<String, Boolean> = mutableMapOf()
         var showBlankLinesByFile: MutableMap<String, Boolean> = mutableMapOf()
         var showLineNumbersByFile: MutableMap<String, Boolean> = mutableMapOf()
+        var showLoggingLinesByFile: MutableMap<String, Boolean> = mutableMapOf()
     }
 
     private var state = State()
@@ -61,6 +62,15 @@ class CodeFocusToggleState : PersistentStateComponent<CodeFocusToggleState.State
         value: Boolean,
     ) {
         state.showLineNumbersByFile[fileUrl] = value
+    }
+
+    fun getShowLoggingLines(fileUrl: String): Boolean? = state.showLoggingLinesByFile[fileUrl]
+
+    fun setShowLoggingLines(
+        fileUrl: String,
+        value: Boolean,
+    ) {
+        state.showLoggingLinesByFile[fileUrl] = value
     }
 
     companion object {
