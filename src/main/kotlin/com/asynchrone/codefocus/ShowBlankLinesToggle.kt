@@ -4,15 +4,14 @@ import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.FoldRegion
 import com.intellij.openapi.util.Key
-import com.intellij.openapi.util.TextRange
-import com.intellij.psi.PsiComment
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiElement
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.util.ui.JBUI
-import com.jetbrains.python.psi.PyExpressionStatement
-import com.jetbrains.python.psi.PyStatement
-import com.jetbrains.python.psi.PyStringLiteralExpression
+import com.jetbrains.python.psi.PyClass
+import com.jetbrains.python.psi.PyDecoratable
+import com.jetbrains.python.psi.PyFunction
+import com.jetbrains.python.psi.PyImportStatementBase
 import java.awt.Color
 import java.awt.Cursor
 import java.awt.Dimension
@@ -27,18 +26,17 @@ import javax.swing.JLabel
 import javax.swing.JPanel
 
 /**
- * Slide-toggle pill for the "Show Comments" switch.
+ * Slide-toggle pill for the "Show Blank Lines" switch.
  *
- * On is the default — comments stay visible. Off folds every Python comment
- * with an empty placeholder so it disappears from view without touching the
- * file. State is persisted on the [Editor] via [STATE_KEY] so a re-created
- * toggle picks up the previous choice.
+ * Hides "decorative" blank lines while keeping the ones that PEP 8 requires
+ * around top-level `def` and `class` definitions (two blank lines on each
+ * side). Inside function bodies any blank line is fair game.
  */
-class ShowCommentsToggle(
+class ShowBlankLinesToggle(
     private val editor: Editor? = null,
 ) : JPanel(FlowLayout(FlowLayout.RIGHT, JBUI.scale(6), JBUI.scale(1))) {
     private val pill = Pill()
-    private val label = JLabel(CodeFocusBundle.message("toggle.showComments.label"))
+    private val label = JLabel(CodeFocusBundle.message("toggle.showBlankLines.label"))
 
     var isOn: Boolean
         get() = pill.isOn
@@ -71,7 +69,7 @@ class ShowCommentsToggle(
         val initial = loadState() ?: true
         pill.isOn = initial
         updateTooltip()
-        applyToEditor()
+        if (!initial) applyToEditor()
     }
 
     private fun loadState(): Boolean? {
@@ -79,7 +77,7 @@ class ShowCommentsToggle(
         ed.getUserData(STATE_KEY)?.let { return it }
         val project = ed.project ?: return null
         val url = CodeFocusToggleState.fileUrl(ed) ?: return null
-        return CodeFocusToggleState.getInstance(project).getShowComments(url)
+        return CodeFocusToggleState.getInstance(project).getShowBlankLines(url)
     }
 
     private fun saveState(value: Boolean) {
@@ -87,11 +85,11 @@ class ShowCommentsToggle(
         ed.putUserData(STATE_KEY, value)
         val project = ed.project ?: return
         val url = CodeFocusToggleState.fileUrl(ed) ?: return
-        CodeFocusToggleState.getInstance(project).setShowComments(url, value)
+        CodeFocusToggleState.getInstance(project).setShowBlankLines(url, value)
     }
 
     private fun updateTooltip() {
-        val key = if (pill.isOn) "toggle.showComments.tooltip.on" else "toggle.showComments.tooltip.off"
+        val key = if (pill.isOn) "toggle.showBlankLines.tooltip.on" else "toggle.showBlankLines.tooltip.off"
         toolTipText = CodeFocusBundle.message(key)
         pill.toolTipText = toolTipText
         label.toolTipText = toolTipText
@@ -107,45 +105,30 @@ class ShowCommentsToggle(
             }
             regions.clear()
 
+            if (pill.isOn) return@runBatchFoldingOperation
+
             val project = ed.project ?: return@runBatchFoldingOperation
             val psiFile =
                 PsiDocumentManager.getInstance(project).getPsiFile(ed.document)
                     ?: return@runBatchFoldingOperation
 
-            for (existing in model.allFoldRegions.toList()) {
-                if (!existing.isValid) continue
-                if (!isCommentOnlyRegion(existing, psiFile, ed.document)) continue
-                existing.isExpanded = pill.isOn
-            }
+            val protected = collectProtectedBlankLines(psiFile, ed.document)
 
-            if (pill.isOn) return@runBatchFoldingOperation
-
-            val ranges = mutableListOf<TextRange>()
-            for (comment in PsiTreeUtil.findChildrenOfType(psiFile, PsiComment::class.java)) {
-                ranges += comment.textRange
-            }
-            for (stmt in PsiTreeUtil.findChildrenOfType(psiFile, PyExpressionStatement::class.java)) {
-                if (stmt.expression is PyStringLiteralExpression) {
-                    ranges += stmt.textRange
-                }
-            }
-
-            for (range in ranges) {
-                val (start, end) = expandRange(ed.document, range)
-                if (start >= end) continue
-                val coveredByCollapsed =
-                    model.allFoldRegions.any {
-                        it.isValid &&
-                            !it.isExpanded &&
-                            it.startOffset <= start &&
-                            it.endOffset >= end
+            for (lineRange in findBlankLineRuns(ed.document)) {
+                val (firstLine, lastLine) = lineRange
+                val keep = (firstLine..lastLine).any { it in protected }
+                if (keep) continue
+                val start = ed.document.getLineStartOffset(firstLine)
+                val end =
+                    if (lastLine + 1 < ed.document.lineCount) {
+                        ed.document.getLineStartOffset(lastLine + 1)
+                    } else {
+                        ed.document.getLineEndOffset(lastLine)
                     }
-                if (coveredByCollapsed) continue
-                val region = model.addFoldRegion(start, end, "")
-                if (region != null) {
-                    region.isExpanded = false
-                    regions.add(region)
-                }
+                if (start >= end) continue
+                val region = model.addFoldRegion(start, end, "") ?: continue
+                region.isExpanded = false
+                regions.add(region)
             }
         }
     }
@@ -159,52 +142,67 @@ class ShowCommentsToggle(
         return list
     }
 
-    private fun isCommentOnlyRegion(
-        fold: FoldRegion,
-        psiFile: PsiElement,
-        document: Document,
-    ): Boolean {
-        val foldEndLine = document.getLineNumber((fold.endOffset - 1).coerceAtLeast(fold.startOffset))
-        val foldStartLine = document.getLineNumber(fold.startOffset)
-        if (foldEndLine - foldStartLine > 200) return false
-        val foldRange = TextRange(fold.startOffset, fold.endOffset)
-        var hasContent = false
-        for (stmt in PsiTreeUtil.findChildrenOfType(psiFile, PyStatement::class.java)) {
-            if (!foldRange.contains(stmt.textRange.startOffset)) continue
-            if (stmt is PyExpressionStatement && stmt.expression is PyStringLiteralExpression) {
-                hasContent = true
-                continue
-            }
-            return false
-        }
-        if (!hasContent) {
-            for (comment in PsiTreeUtil.findChildrenOfType(psiFile, PsiComment::class.java)) {
-                if (foldRange.contains(comment.textRange.startOffset)) {
-                    hasContent = true
-                    break
-                }
+    private fun findBlankLineRuns(document: Document): List<Pair<Int, Int>> {
+        val runs = mutableListOf<Pair<Int, Int>>()
+        var inRun = false
+        var runStart = 0
+        for (line in 0 until document.lineCount) {
+            val text =
+                document.getText(
+                    com.intellij.openapi.util.TextRange(
+                        document.getLineStartOffset(line),
+                        document.getLineEndOffset(line),
+                    ),
+                )
+            val blank = text.all { it.isWhitespace() }
+            if (blank && !inRun) {
+                inRun = true
+                runStart = line
+            } else if (!blank && inRun) {
+                runs.add(runStart to line - 1)
+                inRun = false
             }
         }
-        return hasContent
+        if (inRun) runs.add(runStart to document.lineCount - 1)
+        return runs
     }
 
-    private fun expandRange(
+    private fun collectProtectedBlankLines(
+        psiFile: PsiElement,
         document: Document,
-        range: TextRange,
-    ): Pair<Int, Int> {
-        val lineStart = document.getLineStartOffset(document.getLineNumber(range.startOffset))
-        val prefix = document.getText(TextRange(lineStart, range.startOffset))
-        if (prefix.any { !it.isWhitespace() }) {
-            return range.startOffset to range.endOffset
+    ): Set<Int> {
+        val protected = mutableSetOf<Int>()
+        val maxLine = document.lineCount - 1
+        val all =
+            PsiTreeUtil
+                .findChildrenOfAnyType(psiFile, PyFunction::class.java, PyClass::class.java)
+        for (def in all) {
+            val buffer = if (def.parent === psiFile) 2 else 1
+            val startLine = document.getLineNumber(effectiveStartOffset(def))
+            val endLine = document.getLineNumber(def.textRange.endOffset)
+            for (l in (startLine - buffer).coerceAtLeast(0) until startLine) protected += l
+            for (l in (endLine + 1)..(endLine + buffer).coerceAtMost(maxLine)) protected += l
         }
-        val end = range.endOffset
-        val withNewline =
-            if (end < document.textLength && document.charsSequence[end] == '\n') {
-                end + 1
-            } else {
-                end
+        var lastImportEnd = -1
+        for (child in psiFile.children) {
+            if (child is PyImportStatementBase) {
+                val end = document.getLineNumber(child.textRange.endOffset)
+                if (end > lastImportEnd) lastImportEnd = end
             }
-        return lineStart to withNewline
+        }
+        if (lastImportEnd >= 0) {
+            for (l in (lastImportEnd + 1)..(lastImportEnd + 2).coerceAtMost(maxLine)) protected += l
+        }
+        return protected
+    }
+
+    private fun effectiveStartOffset(def: PsiElement): Int {
+        val base = def.textRange.startOffset
+        if (def is PyDecoratable) {
+            val list = def.decoratorList
+            if (list != null) return minOf(base, list.textRange.startOffset)
+        }
+        return base
     }
 
     private class Pill : JComponent() {
@@ -225,7 +223,6 @@ class ShowCommentsToggle(
                 val arc = height
                 g2.color = if (isOn) ON_COLOR else OFF_COLOR
                 g2.fillRoundRect(0, 0, width - 1, height - 1, arc, arc)
-
                 val inset = JBUI.scale(2)
                 val knob = height - inset * 2
                 val knobX = if (isOn) width - knob - inset else inset
@@ -243,7 +240,7 @@ class ShowCommentsToggle(
     }
 
     companion object {
-        private val STATE_KEY = Key.create<Boolean>("codefocus.showComments.isOn")
-        private val REGIONS_KEY = Key.create<MutableList<FoldRegion>>("codefocus.showComments.regions")
+        private val STATE_KEY = Key.create<Boolean>("codefocus.showBlankLines.isOn")
+        private val REGIONS_KEY = Key.create<MutableList<FoldRegion>>("codefocus.showBlankLines.regions")
     }
 }

@@ -8,19 +8,12 @@ import com.intellij.ui.EditorNotificationProvider
 import java.util.function.Function
 import javax.swing.JComponent
 
-/**
- * Adds the "Show Comments" slide-toggle above the editor for `.py` files.
- *
- * Returns null for non-Python files so the platform installs nothing on them.
- */
-class ShowCommentsToggleProvider : EditorNotificationProvider {
+class CodeFocusToggleBarProvider : EditorNotificationProvider {
     override fun collectNotificationData(
         project: Project,
         file: VirtualFile,
     ): Function<in FileEditor, out JComponent?>? {
-        if (!isPython(file)) return null
-        return Function { editor -> if (editor is TextEditor) ShowCommentsToggle(editor.editor) else null }
+        if (!file.extension.equals("py", ignoreCase = true)) return null
+        return Function { editor -> if (editor is TextEditor) CodeFocusToggleBar(editor.editor) else null }
     }
-
-    private fun isPython(file: VirtualFile): Boolean = file.extension.equals("py", ignoreCase = true)
 }
