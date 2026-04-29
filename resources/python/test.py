@@ -47,7 +47,7 @@ def fetch(url: str, retries: int = MAX_RETRIES) -> dict:
 
             # Two consecutive standalone comments deep inside a function,
             # to verify that grouped-comment folding works at depth.
-            print(f"retry {attempt}: {exc}", file=sys.stderr)
+            print(f"retry {attempt}: {exc}")
 
     raise RuntimeError(f"giving up after {retries} attempts") from last_error
 
