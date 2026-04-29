@@ -37,7 +37,6 @@ class ShowCommentsToggle(
 ) : JPanel(FlowLayout(FlowLayout.RIGHT, JBUI.scale(6), JBUI.scale(1))) {
     private val pill = Pill()
     private val label = JLabel(CodeFocusBundle.message("toggle.showComments.label"))
-    private val foldRegions = mutableListOf<FoldRegion>()
 
     var isOn: Boolean
         get() = pill.isOn
@@ -84,10 +83,11 @@ class ShowCommentsToggle(
         val ed = editor ?: return
         val model = ed.foldingModel
         model.runBatchFoldingOperation {
-            for (r in foldRegions) {
+            val regions = regionsFor(ed)
+            for (r in regions) {
                 if (r.isValid) model.removeFoldRegion(r)
             }
-            foldRegions.clear()
+            regions.clear()
 
             if (pill.isOn) return@runBatchFoldingOperation
 
@@ -111,9 +111,18 @@ class ShowCommentsToggle(
                 if (start >= end) continue
                 val region = model.addFoldRegion(start, end, "") ?: continue
                 region.isExpanded = false
-                foldRegions.add(region)
+                regions.add(region)
             }
         }
+    }
+
+    private fun regionsFor(ed: Editor): MutableList<FoldRegion> {
+        var list = ed.getUserData(REGIONS_KEY)
+        if (list == null) {
+            list = mutableListOf()
+            ed.putUserData(REGIONS_KEY, list)
+        }
+        return list
     }
 
     private fun expandRange(
@@ -172,5 +181,6 @@ class ShowCommentsToggle(
 
     companion object {
         private val STATE_KEY = Key.create<Boolean>("codefocus.showComments.isOn")
+        private val REGIONS_KEY = Key.create<MutableList<FoldRegion>>("codefocus.showComments.regions")
     }
 }
