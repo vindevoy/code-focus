@@ -16,6 +16,7 @@ class CodeFocusToggleBar(
     val showBlankLines = ShowBlankLinesToggle(editor)
     val showLineNumbers = ShowLineNumbersToggle(editor)
     val showLoggingLines = ShowLoggingLinesToggle(editor)
+    val showImports = ShowImportsToggle(editor)
 
     init {
         isOpaque = false
@@ -24,5 +25,6 @@ class CodeFocusToggleBar(
         add(showBlankLines)
         add(showLineNumbers)
         add(showLoggingLines)
+        add(showImports)
     }
 }

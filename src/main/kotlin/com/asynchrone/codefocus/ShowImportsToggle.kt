@@ -35,7 +35,6 @@ class ShowImportsToggle(
 ) : JPanel(FlowLayout(FlowLayout.RIGHT, JBUI.scale(6), JBUI.scale(1))) {
     private val pill = Pill()
     private val label = JLabel(CodeFocusBundle.message("toggle.showImports.label"))
-    private val foldRegions = mutableListOf<FoldRegion>()
 
     var isOn: Boolean
         get() = pill.isOn
@@ -44,7 +43,7 @@ class ShowImportsToggle(
             pill.isOn = value
             pill.repaint()
             updateTooltip()
-            editor?.putUserData(STATE_KEY, value)
+            saveState(value)
             applyToEditor()
         }
 
@@ -65,10 +64,35 @@ class ShowImportsToggle(
         pill.addMouseListener(click)
         label.addMouseListener(click)
 
-        val initial = editor?.getUserData(STATE_KEY) ?: true
+        val initial = loadState() ?: true
         pill.isOn = initial
         updateTooltip()
         if (!initial) applyToEditor()
+    }
+
+    private fun loadState(): Boolean? {
+        val ed = editor ?: return null
+        ed.getUserData(STATE_KEY)?.let { return it }
+        val project = ed.project ?: return null
+        val url = CodeFocusToggleState.fileUrl(ed) ?: return null
+        return CodeFocusToggleState.getInstance(project).getShowImports(url)
+    }
+
+    private fun saveState(value: Boolean) {
+        val ed = editor ?: return
+        ed.putUserData(STATE_KEY, value)
+        val project = ed.project ?: return
+        val url = CodeFocusToggleState.fileUrl(ed) ?: return
+        CodeFocusToggleState.getInstance(project).setShowImports(url, value)
+    }
+
+    private fun regionsFor(ed: Editor): MutableList<FoldRegion> {
+        var list = ed.getUserData(REGIONS_KEY)
+        if (list == null) {
+            list = mutableListOf()
+            ed.putUserData(REGIONS_KEY, list)
+        }
+        return list
     }
 
     private fun updateTooltip() {
@@ -82,10 +106,11 @@ class ShowImportsToggle(
         val ed = editor ?: return
         val model = ed.foldingModel
         model.runBatchFoldingOperation {
-            for (r in foldRegions) {
+            val regions = regionsFor(ed)
+            for (r in regions) {
                 if (r.isValid) model.removeFoldRegion(r)
             }
-            foldRegions.clear()
+            regions.clear()
             if (pill.isOn) return@runBatchFoldingOperation
             val project = ed.project ?: return@runBatchFoldingOperation
             val psiFile =
@@ -106,7 +131,7 @@ class ShowImportsToggle(
                 if (start >= end) continue
                 val region = model.addFoldRegion(start, end, "") ?: continue
                 region.isExpanded = false
-                foldRegions.add(region)
+                regions.add(region)
             }
         }
     }
@@ -166,5 +191,6 @@ class ShowImportsToggle(
 
     companion object {
         private val STATE_KEY = Key.create<Boolean>("codefocus.showImports.isOn")
+        private val REGIONS_KEY = Key.create<MutableList<FoldRegion>>("codefocus.showImports.regions")
     }
 }
