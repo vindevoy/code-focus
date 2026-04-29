@@ -86,6 +86,7 @@ class Recording:
 
 # Standalone comment that sits between two top-level definitions.
 
+
 def main() -> int:
     """Entry point used when the module is run as a script."""
     if not sys.argv:

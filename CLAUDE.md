@@ -93,6 +93,8 @@ No custom overrides.
 
 These rules apply to every Python file checked into the repo (today: the `resources/python/test.py` fixture, but more may follow). They sit on top of PEP 8, never against it.
 
+**Run `ruff format` on every `.py` file before committing.** Ruff is the authoritative formatter — wherever a hand-style rule below conflicts with what `ruff format` produces, ruff wins and the rule is wrong. If `ruff` isn't on PATH, run it via `uv tool run ruff format <file>`.
+
 **Blank lines between statement categories.** Python statements fall into three categories:
 
 - **Sequence** — assignments, expression statements, `return`, `raise`, `pass`, `import`.
@@ -119,8 +121,8 @@ def main() -> int:
 **Comments and the code they belong to.**
 
 - A comment that describes the next statement **sticks to that statement** — zero blank lines between the comment and the code below it.
-- **Never put 2 blank lines after a comment.** One blank line is the maximum, and even then only when the comment is genuinely orphan (a section marker that doesn't belong to the code below). Two blanks after a comment is wasted vertical space.
-- PEP 8's "two blank lines around top-level `def` / `class`" still applies. When an orphan comment sits between two top-level definitions, put the two PEP-8 blanks **before** the comment and one blank between the comment and the next `def`/`class` — not two. The orphan comment itself replaces one of the separator lines.
+- For comments **inside** a function body, never put 2 blank lines after them — one blank line is the maximum, and only when the comment is genuinely orphan.
+- For comments **at module top level**, ruff will keep 2 blank lines around top-level `def` / `class`, including after an orphan comment sitting between two definitions. Don't fight ruff here — the orphan comment is just a section marker and the PEP-8 separator goes both before and after it.
 
 
 ## Git Workflow
