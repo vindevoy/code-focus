@@ -120,12 +120,14 @@ class ShowCommentsToggle(
                     regions.add(region)
                 } else {
                     val existing =
-                        model.allFoldRegions.firstOrNull {
-                            it.isValid &&
-                                it.startOffset <= start &&
-                                it.endOffset >= end
-                        }
-                    if (existing != null && existing.isExpanded && existing !in collapsed) {
+                        model.allFoldRegions
+                            .filter {
+                                it.isValid &&
+                                    it.startOffset <= start &&
+                                    it.endOffset >= end &&
+                                    it !in collapsed
+                            }.minByOrNull { it.endOffset - it.startOffset }
+                    if (existing != null && existing.isExpanded && isCommentSizedFold(ed.document, existing, start, end)) {
                         existing.isExpanded = false
                         collapsed.add(existing)
                     }
@@ -150,6 +152,20 @@ class ShowCommentsToggle(
             ed.putUserData(COLLAPSED_KEY, list)
         }
         return list
+    }
+
+    private fun isCommentSizedFold(
+        document: Document,
+        fold: FoldRegion,
+        targetStart: Int,
+        targetEnd: Int,
+    ): Boolean {
+        val foldStartLine = document.getLineNumber(fold.startOffset)
+        val foldEndLine = document.getLineNumber((fold.endOffset - 1).coerceAtLeast(fold.startOffset))
+        val targetStartLine = document.getLineNumber(targetStart)
+        val targetEndLine = document.getLineNumber((targetEnd - 1).coerceAtLeast(targetStart))
+        val paddingLines = (foldEndLine - targetEndLine) + (targetStartLine - foldStartLine)
+        return paddingLines <= 4
     }
 
     private fun expandRange(
