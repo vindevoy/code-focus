@@ -11,6 +11,7 @@ import com.intellij.util.ui.JBUI
 import com.jetbrains.python.psi.PyClass
 import com.jetbrains.python.psi.PyDecoratable
 import com.jetbrains.python.psi.PyFunction
+import com.jetbrains.python.psi.PyImportStatementBase
 import java.awt.Color
 import java.awt.Cursor
 import java.awt.Dimension
@@ -155,6 +156,7 @@ class ShowBlankLinesToggle(
         document: Document,
     ): Set<Int> {
         val protected = mutableSetOf<Int>()
+        val maxLine = document.lineCount - 1
         val all =
             PsiTreeUtil
                 .findChildrenOfAnyType(psiFile, PyFunction::class.java, PyClass::class.java)
@@ -163,8 +165,17 @@ class ShowBlankLinesToggle(
             val startLine = document.getLineNumber(effectiveStartOffset(def))
             val endLine = document.getLineNumber(def.textRange.endOffset)
             for (l in (startLine - buffer).coerceAtLeast(0) until startLine) protected += l
-            val maxLine = document.lineCount - 1
             for (l in (endLine + 1)..(endLine + buffer).coerceAtMost(maxLine)) protected += l
+        }
+        var lastImportEnd = -1
+        for (child in psiFile.children) {
+            if (child is PyImportStatementBase) {
+                val end = document.getLineNumber(child.textRange.endOffset)
+                if (end > lastImportEnd) lastImportEnd = end
+            }
+        }
+        if (lastImportEnd >= 0) {
+            for (l in (lastImportEnd + 1)..(lastImportEnd + 2).coerceAtMost(maxLine)) protected += l
         }
         return protected
     }
