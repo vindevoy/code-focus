@@ -19,7 +19,6 @@ from pathlib import Path  # inline comment on a from-import
 MAX_RETRIES = 3  # inline comment on a constant assignment
 DEFAULT_NAME = "code-focus"
 
-
 # Standalone comment between two top-level constants.
 # Followed by a second one to form a 2-line group.
 TIMEOUT_SECONDS = 30
@@ -86,7 +85,6 @@ class Recording:
 
 
 # Standalone comment that sits between two top-level definitions.
-
 
 def main() -> int:
     """Entry point used when the module is run as a script."""

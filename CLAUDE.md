@@ -89,6 +89,39 @@ Follow the official Kotlin coding conventions: https://kotlinlang.org/docs/codin
 
 No custom overrides.
 
+### Python style for fixtures and any .py files in this repo
+
+These rules apply to every Python file checked into the repo (today: the `resources/python/test.py` fixture, but more may follow). They sit on top of PEP 8, never against it.
+
+**Blank lines between statement categories.** Python statements fall into three categories:
+
+- **Sequence** — assignments, expression statements, `return`, `raise`, `pass`, `import`.
+- **Iteration** — `for`, `while`.
+- **Selection** — `if` / `elif` / `else`, `match`, `try` / `except` / `finally`.
+
+When two adjacent statements are in different categories, **insert exactly one blank line between them**. Two statements in the same category sit directly next to each other with no blank line.
+
+**Returns at the end of a function.** When a function ends with a `return` (or `raise`) and there is real code above it, **insert one blank line before that final return**. This visually separates the result from the work that produced it.
+
+**Early-exit returns.** A `return` (or `raise`) used as a guard at the top of a function — before the main body — gets **no blank line before it**. The guard sticks to the condition that triggered it. Example:
+
+```python
+def main() -> int:
+    if not sys.argv:
+        return 1   # early exit — no blank above
+
+    path = Path(sys.argv[0]).resolve()
+    print(path)
+
+    return 0   # final return — blank above
+```
+
+**Comments and the code they belong to.**
+
+- A comment that describes the next statement **sticks to that statement** — zero blank lines between the comment and the code below it.
+- **Never put 2 blank lines after a comment.** One blank line is the maximum, and even then only when the comment is genuinely orphan (a section marker that doesn't belong to the code below). Two blanks after a comment is wasted vertical space.
+- PEP 8's "two blank lines around top-level `def` / `class`" still applies. When an orphan comment sits between two top-level definitions, put the two PEP-8 blanks **before** the comment and one blank between the comment and the next `def`/`class` — not two. The orphan comment itself replaces one of the separator lines.
+
 
 ## Git Workflow
 
