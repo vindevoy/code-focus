@@ -39,6 +39,7 @@ def fetch(url: str, retries: int = MAX_RETRIES) -> dict:
     while attempt < retries:
         # Standalone comment inside a while loop.
         attempt += 1
+
         try:
             # Standalone comment immediately before a return.
             return json.loads(os.environ.get(f"FAKE_RESPONSE_{url}", "{}"))
@@ -76,8 +77,8 @@ class Recording:
         # Second comment in the group — describes the buffer below.
         # Third comment in the group — closes the trio.
         buffer = deque(self.samples, maxlen=10)
-
         counts: defaultdict[int, int] = defaultdict(int)
+
         for sample in buffer:  # inline comment on a for-loop header
             counts[sample] += 1
 
@@ -89,8 +90,12 @@ class Recording:
 
 def main() -> int:
     """Entry point used when the module is run as a script."""
+    if not sys.argv:
+        return 1
+
     path = Path(sys.argv[0]).resolve()
     print(path)  # inline comment on the only print
+
     return 0
 
 
