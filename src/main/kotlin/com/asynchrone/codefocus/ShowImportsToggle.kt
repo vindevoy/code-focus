@@ -6,10 +6,13 @@ import com.intellij.openapi.editor.FoldRegion
 import com.intellij.openapi.util.Key
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiDocumentManager
+import com.intellij.psi.PsiElement
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.util.ui.JBUI
 import com.jetbrains.python.psi.PyFromImportStatement
 import com.jetbrains.python.psi.PyImportStatement
+import com.jetbrains.python.psi.PyImportStatementBase
+import com.jetbrains.python.psi.PyStatement
 import java.awt.Color
 import java.awt.Cursor
 import java.awt.Dimension
@@ -67,7 +70,7 @@ class ShowImportsToggle(
         val initial = loadState() ?: true
         pill.isOn = initial
         updateTooltip()
-        if (!initial) applyToEditor()
+        applyToEditor()
     }
 
     private fun loadState(): Boolean? {
@@ -111,29 +114,121 @@ class ShowImportsToggle(
                 if (r.isValid) model.removeFoldRegion(r)
             }
             regions.clear()
-            if (pill.isOn) return@runBatchFoldingOperation
+
             val project = ed.project ?: return@runBatchFoldingOperation
             val psiFile =
                 PsiDocumentManager.getInstance(project).getPsiFile(ed.document)
                     ?: return@runBatchFoldingOperation
 
-            val ranges = mutableListOf<TextRange>()
+            for (existing in model.allFoldRegions.toList()) {
+                if (!existing.isValid) continue
+                if (!isImportOnlyRegion(existing, psiFile, ed.document)) continue
+                existing.isExpanded = pill.isOn
+            }
+
+            if (pill.isOn) return@runBatchFoldingOperation
+
+            for (group in topLevelImportGroups(psiFile)) {
+                val (start, end) = importGroupRange(ed.document, group)
+                if (start >= end) continue
+                if (alreadyCovered(model, start, end)) continue
+                val region = model.addFoldRegion(start, end, "") ?: continue
+                region.isExpanded = false
+                regions.add(region)
+            }
+
             for (stmt in PsiTreeUtil.findChildrenOfAnyType(
                 psiFile,
                 PyImportStatement::class.java,
                 PyFromImportStatement::class.java,
             )) {
-                ranges += stmt.textRange
-            }
-
-            for (range in ranges) {
-                val (start, end) = expandRange(ed.document, range)
+                if (stmt.parent === psiFile) continue
+                val (start, end) = expandRange(ed.document, stmt.textRange)
                 if (start >= end) continue
+                if (alreadyCovered(model, start, end)) continue
                 val region = model.addFoldRegion(start, end, "") ?: continue
                 region.isExpanded = false
                 regions.add(region)
             }
         }
+    }
+
+    private fun topLevelImportGroups(psiFile: PsiElement): List<List<PyImportStatementBase>> {
+        val groups = mutableListOf<MutableList<PyImportStatementBase>>()
+        var current: MutableList<PyImportStatementBase>? = null
+        for (child in psiFile.children) {
+            if (child is PyImportStatementBase) {
+                if (current == null) current = mutableListOf()
+                current.add(child)
+            } else if (child is PyStatement) {
+                current?.let { groups.add(it) }
+                current = null
+            }
+        }
+        current?.let { groups.add(it) }
+        return groups
+    }
+
+    private fun importGroupRange(
+        document: com.intellij.openapi.editor.Document,
+        group: List<PyImportStatementBase>,
+    ): Pair<Int, Int> {
+        val first = group.first()
+        val last = group.last()
+        val startLine = document.getLineNumber(first.textRange.startOffset)
+        var endLine = document.getLineNumber((last.textRange.endOffset - 1).coerceAtLeast(first.textRange.startOffset))
+        while (endLine + 1 < document.lineCount) {
+            val nextLine = endLine + 1
+            val text =
+                document.getText(
+                    TextRange(
+                        document.getLineStartOffset(nextLine),
+                        document.getLineEndOffset(nextLine),
+                    ),
+                )
+            if (text.all { it.isWhitespace() }) endLine = nextLine else break
+        }
+        val start = document.getLineStartOffset(startLine)
+        val end =
+            if (endLine + 1 < document.lineCount) {
+                document.getLineStartOffset(endLine + 1)
+            } else {
+                document.getLineEndOffset(endLine)
+            }
+        return start to end
+    }
+
+    private fun alreadyCovered(
+        model: com.intellij.openapi.editor.FoldingModel,
+        start: Int,
+        end: Int,
+    ): Boolean =
+        model.allFoldRegions.any {
+            it.isValid &&
+                !it.isExpanded &&
+                it.startOffset <= start &&
+                it.endOffset >= end
+        }
+
+    private fun isImportOnlyRegion(
+        fold: FoldRegion,
+        psiFile: PsiElement,
+        document: com.intellij.openapi.editor.Document,
+    ): Boolean {
+        val foldStartLine = document.getLineNumber(fold.startOffset)
+        val foldEndLine = document.getLineNumber((fold.endOffset - 1).coerceAtLeast(fold.startOffset))
+        if (foldEndLine - foldStartLine > 200) return false
+        val foldRange = TextRange(fold.startOffset, fold.endOffset)
+        var hasImport = false
+        for (stmt in PsiTreeUtil.findChildrenOfType(psiFile, PyStatement::class.java)) {
+            if (!foldRange.contains(stmt.textRange.startOffset)) continue
+            if (stmt is PyImportStatementBase) {
+                hasImport = true
+                continue
+            }
+            return false
+        }
+        return hasImport
     }
 
     private fun expandRange(
