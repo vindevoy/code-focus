@@ -41,15 +41,15 @@ def fetch(url: str, retries: int = MAX_RETRIES) -> dict:
         attempt += 1
         try:
             # Standalone comment immediately before a return.
-            return json.loads(os.environ.get("FAKE_RESPONSE", "{}"))
+            return json.loads(os.environ.get(f"FAKE_RESPONSE_{url}", "{}"))
         except ValueError as exc:  # inline comment on an except clause
             last_error = exc
 
             # Two consecutive standalone comments deep inside a function,
             # to verify that grouped-comment folding works at depth.
-            print(f"retry {attempt}: {exc}")
+            print(f"retry {attempt} for {url}: {exc}")
 
-    raise RuntimeError(f"giving up after {retries} attempts") from last_error
+    raise RuntimeError(f"giving up on {url} after {retries} attempts") from last_error
 
 
 @dataclass
