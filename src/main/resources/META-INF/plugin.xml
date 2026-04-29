@@ -10,7 +10,6 @@
     <resource-bundle>messages.CodeFocusBundle</resource-bundle>
 
     <extensions defaultExtensionNs="com.intellij">
-        <editorNotificationProvider implementation="com.asynchrone.codefocus.ShowCommentsToggleProvider"/>
-        <editorNotificationProvider implementation="com.asynchrone.codefocus.ShowBlankLinesToggleProvider"/>
+        <editorNotificationProvider implementation="com.asynchrone.codefocus.CodeFocusToggleBarProvider"/>
     </extensions>
 </idea-plugin>
