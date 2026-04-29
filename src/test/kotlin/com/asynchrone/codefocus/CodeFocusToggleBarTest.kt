@@ -9,11 +9,12 @@ import java.awt.FlowLayout
 
 class CodeFocusToggleBarTest {
     @Test
-    fun `bar contains both toggles in reading order`() {
+    fun `bar contains all toggles in reading order`() {
         val bar = CodeFocusToggleBar()
-        assertEquals(2, bar.componentCount)
+        assertEquals(3, bar.componentCount)
         assertSame(bar.showComments, bar.getComponent(0))
         assertSame(bar.showBlankLines, bar.getComponent(1))
+        assertSame(bar.showLineNumbers, bar.getComponent(2))
     }
 
     @Test

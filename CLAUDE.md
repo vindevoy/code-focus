@@ -89,6 +89,41 @@ Follow the official Kotlin coding conventions: https://kotlinlang.org/docs/codin
 
 No custom overrides.
 
+### Python style for fixtures and any .py files in this repo
+
+These rules apply to every Python file checked into the repo (today: the `resources/python/test.py` fixture, but more may follow). They sit on top of PEP 8, never against it.
+
+**Run `ruff format` on every `.py` file before committing.** Ruff is the authoritative formatter — wherever a hand-style rule below conflicts with what `ruff format` produces, ruff wins and the rule is wrong. If `ruff` isn't on PATH, run it via `uv tool run ruff format <file>`.
+
+**Blank lines between statement categories.** Python statements fall into three categories:
+
+- **Sequence** — assignments, expression statements, `return`, `raise`, `pass`, `import`.
+- **Iteration** — `for`, `while`.
+- **Selection** — `if` / `elif` / `else`, `match`, `try` / `except` / `finally`.
+
+When two adjacent statements are in different categories, **insert exactly one blank line between them**. Two statements in the same category sit directly next to each other with no blank line.
+
+**Returns at the end of a function.** When a function ends with a `return` (or `raise`) and there is real code above it, **insert one blank line before that final return**. This visually separates the result from the work that produced it.
+
+**Early-exit returns.** A `return` (or `raise`) used as a guard at the top of a function — before the main body — gets **no blank line before it**. The guard sticks to the condition that triggered it. Example:
+
+```python
+def main() -> int:
+    if not sys.argv:
+        return 1   # early exit — no blank above
+
+    path = Path(sys.argv[0]).resolve()
+    print(path)
+
+    return 0   # final return — blank above
+```
+
+**Comments and the code they belong to.**
+
+- A comment that describes the next statement **sticks to that statement** — zero blank lines between the comment and the code below it.
+- For comments **inside** a function body, never put 2 blank lines after them — one blank line is the maximum, and only when the comment is genuinely orphan.
+- For comments **at module top level**, ruff will keep 2 blank lines around top-level `def` / `class`, including after an orphan comment sitting between two definitions. Don't fight ruff here — the orphan comment is just a section marker and the PEP-8 separator goes both before and after it.
+
 
 ## Git Workflow
 

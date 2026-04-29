@@ -15,3 +15,7 @@ build/
 # Everything else under .claude/ is per-machine state and stays local.
 .claude/*
 !.claude/settings.json
+
+# Python bytecode
+__pycache__/
+*.pyc
