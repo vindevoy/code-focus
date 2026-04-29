@@ -7,9 +7,11 @@ import com.intellij.openapi.util.Key
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiComment
 import com.intellij.psi.PsiDocumentManager
+import com.intellij.psi.PsiElement
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.util.ui.JBUI
 import com.jetbrains.python.psi.PyExpressionStatement
+import com.jetbrains.python.psi.PyStatement
 import com.jetbrains.python.psi.PyStringLiteralExpression
 import java.awt.Color
 import java.awt.Cursor
@@ -101,6 +103,14 @@ class ShowCommentsToggle(
                 PsiDocumentManager.getInstance(project).getPsiFile(ed.document)
                     ?: return@runBatchFoldingOperation
 
+            for (existing in model.allFoldRegions.toList()) {
+                if (!existing.isValid || !existing.isExpanded) continue
+                if (isCommentOnlyRegion(existing, psiFile, ed.document)) {
+                    existing.isExpanded = false
+                    collapsed.add(existing)
+                }
+            }
+
             val ranges = mutableListOf<TextRange>()
             for (comment in PsiTreeUtil.findChildrenOfType(psiFile, PsiComment::class.java)) {
                 ranges += comment.textRange
@@ -114,23 +124,11 @@ class ShowCommentsToggle(
             for (range in ranges) {
                 val (start, end) = expandRange(ed.document, range)
                 if (start >= end) continue
+                if (collapsed.any { it.startOffset <= start && it.endOffset >= end }) continue
                 val region = model.addFoldRegion(start, end, "")
                 if (region != null) {
                     region.isExpanded = false
                     regions.add(region)
-                } else {
-                    val existing =
-                        model.allFoldRegions
-                            .filter {
-                                it.isValid &&
-                                    it.startOffset <= start &&
-                                    it.endOffset >= end &&
-                                    it !in collapsed
-                            }.minByOrNull { it.endOffset - it.startOffset }
-                    if (existing != null && existing.isExpanded && isCommentSizedFold(ed.document, existing, start, end)) {
-                        existing.isExpanded = false
-                        collapsed.add(existing)
-                    }
                 }
             }
         }
@@ -154,18 +152,33 @@ class ShowCommentsToggle(
         return list
     }
 
-    private fun isCommentSizedFold(
-        document: Document,
+    private fun isCommentOnlyRegion(
         fold: FoldRegion,
-        targetStart: Int,
-        targetEnd: Int,
+        psiFile: PsiElement,
+        document: Document,
     ): Boolean {
-        val foldStartLine = document.getLineNumber(fold.startOffset)
         val foldEndLine = document.getLineNumber((fold.endOffset - 1).coerceAtLeast(fold.startOffset))
-        val targetStartLine = document.getLineNumber(targetStart)
-        val targetEndLine = document.getLineNumber((targetEnd - 1).coerceAtLeast(targetStart))
-        val paddingLines = (foldEndLine - targetEndLine) + (targetStartLine - foldStartLine)
-        return paddingLines <= 4
+        val foldStartLine = document.getLineNumber(fold.startOffset)
+        if (foldEndLine - foldStartLine > 200) return false
+        val foldRange = TextRange(fold.startOffset, fold.endOffset)
+        var hasContent = false
+        for (stmt in PsiTreeUtil.findChildrenOfType(psiFile, PyStatement::class.java)) {
+            if (!foldRange.contains(stmt.textRange.startOffset)) continue
+            if (stmt is PyExpressionStatement && stmt.expression is PyStringLiteralExpression) {
+                hasContent = true
+                continue
+            }
+            return false
+        }
+        if (!hasContent) {
+            for (comment in PsiTreeUtil.findChildrenOfType(psiFile, PsiComment::class.java)) {
+                if (foldRange.contains(comment.textRange.startOffset)) {
+                    hasContent = true
+                    break
+                }
+            }
+        }
+        return hasContent
     }
 
     private fun expandRange(
