@@ -14,11 +14,13 @@ class CodeFocusToggleBar(
 ) : JPanel(FlowLayout(FlowLayout.RIGHT, JBUI.scale(8), JBUI.scale(1))) {
     val showComments = ShowCommentsToggle(editor)
     val showBlankLines = ShowBlankLinesToggle(editor)
+    val showLineNumbers = ShowLineNumbersToggle(editor)
 
     init {
         isOpaque = false
         border = JBUI.Borders.empty(1, 6)
         add(showComments)
         add(showBlankLines)
+        add(showLineNumbers)
     }
 }
