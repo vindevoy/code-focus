@@ -47,7 +47,7 @@ class ShowCommentsToggle(
             pill.isOn = value
             pill.repaint()
             updateTooltip()
-            editor?.putUserData(STATE_KEY, value)
+            saveState(value)
             applyToEditor()
         }
 
@@ -68,10 +68,26 @@ class ShowCommentsToggle(
         pill.addMouseListener(click)
         label.addMouseListener(click)
 
-        val initial = editor?.getUserData(STATE_KEY) ?: true
+        val initial = loadState() ?: true
         pill.isOn = initial
         updateTooltip()
-        if (!initial) applyToEditor()
+        applyToEditor()
+    }
+
+    private fun loadState(): Boolean? {
+        val ed = editor ?: return null
+        ed.getUserData(STATE_KEY)?.let { return it }
+        val project = ed.project ?: return null
+        val url = CodeFocusToggleState.fileUrl(ed) ?: return null
+        return CodeFocusToggleState.getInstance(project).getShowComments(url)
+    }
+
+    private fun saveState(value: Boolean) {
+        val ed = editor ?: return
+        ed.putUserData(STATE_KEY, value)
+        val project = ed.project ?: return
+        val url = CodeFocusToggleState.fileUrl(ed) ?: return
+        CodeFocusToggleState.getInstance(project).setShowComments(url, value)
     }
 
     private fun updateTooltip() {
@@ -90,13 +106,6 @@ class ShowCommentsToggle(
                 if (r.isValid) model.removeFoldRegion(r)
             }
             regions.clear()
-            val collapsed = collapsedFor(ed)
-            for (r in collapsed) {
-                if (r.isValid) r.isExpanded = true
-            }
-            collapsed.clear()
-
-            if (pill.isOn) return@runBatchFoldingOperation
 
             val project = ed.project ?: return@runBatchFoldingOperation
             val psiFile =
@@ -104,12 +113,12 @@ class ShowCommentsToggle(
                     ?: return@runBatchFoldingOperation
 
             for (existing in model.allFoldRegions.toList()) {
-                if (!existing.isValid || !existing.isExpanded) continue
-                if (isCommentOnlyRegion(existing, psiFile, ed.document)) {
-                    existing.isExpanded = false
-                    collapsed.add(existing)
-                }
+                if (!existing.isValid) continue
+                if (!isCommentOnlyRegion(existing, psiFile, ed.document)) continue
+                existing.isExpanded = pill.isOn
             }
+
+            if (pill.isOn) return@runBatchFoldingOperation
 
             val ranges = mutableListOf<TextRange>()
             for (comment in PsiTreeUtil.findChildrenOfType(psiFile, PsiComment::class.java)) {
@@ -124,7 +133,14 @@ class ShowCommentsToggle(
             for (range in ranges) {
                 val (start, end) = expandRange(ed.document, range)
                 if (start >= end) continue
-                if (collapsed.any { it.startOffset <= start && it.endOffset >= end }) continue
+                val coveredByCollapsed =
+                    model.allFoldRegions.any {
+                        it.isValid &&
+                            !it.isExpanded &&
+                            it.startOffset <= start &&
+                            it.endOffset >= end
+                    }
+                if (coveredByCollapsed) continue
                 val region = model.addFoldRegion(start, end, "")
                 if (region != null) {
                     region.isExpanded = false
@@ -139,15 +155,6 @@ class ShowCommentsToggle(
         if (list == null) {
             list = mutableListOf()
             ed.putUserData(REGIONS_KEY, list)
-        }
-        return list
-    }
-
-    private fun collapsedFor(ed: Editor): MutableList<FoldRegion> {
-        var list = ed.getUserData(COLLAPSED_KEY)
-        if (list == null) {
-            list = mutableListOf()
-            ed.putUserData(COLLAPSED_KEY, list)
         }
         return list
     }
@@ -238,6 +245,5 @@ class ShowCommentsToggle(
     companion object {
         private val STATE_KEY = Key.create<Boolean>("codefocus.showComments.isOn")
         private val REGIONS_KEY = Key.create<MutableList<FoldRegion>>("codefocus.showComments.regions")
-        private val COLLAPSED_KEY = Key.create<MutableList<FoldRegion>>("codefocus.showComments.collapsed")
     }
 }

@@ -45,7 +45,7 @@ class ShowBlankLinesToggle(
             pill.isOn = value
             pill.repaint()
             updateTooltip()
-            editor?.putUserData(STATE_KEY, value)
+            saveState(value)
             applyToEditor()
         }
 
@@ -66,10 +66,26 @@ class ShowBlankLinesToggle(
         pill.addMouseListener(click)
         label.addMouseListener(click)
 
-        val initial = editor?.getUserData(STATE_KEY) ?: true
+        val initial = loadState() ?: true
         pill.isOn = initial
         updateTooltip()
         if (!initial) applyToEditor()
+    }
+
+    private fun loadState(): Boolean? {
+        val ed = editor ?: return null
+        ed.getUserData(STATE_KEY)?.let { return it }
+        val project = ed.project ?: return null
+        val url = CodeFocusToggleState.fileUrl(ed) ?: return null
+        return CodeFocusToggleState.getInstance(project).getShowBlankLines(url)
+    }
+
+    private fun saveState(value: Boolean) {
+        val ed = editor ?: return
+        ed.putUserData(STATE_KEY, value)
+        val project = ed.project ?: return
+        val url = CodeFocusToggleState.fileUrl(ed) ?: return
+        CodeFocusToggleState.getInstance(project).setShowBlankLines(url, value)
     }
 
     private fun updateTooltip() {
