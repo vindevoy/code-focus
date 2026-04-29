@@ -88,6 +88,11 @@ class ShowCommentsToggle(
                 if (r.isValid) model.removeFoldRegion(r)
             }
             regions.clear()
+            val collapsed = collapsedFor(ed)
+            for (r in collapsed) {
+                if (r.isValid) r.isExpanded = true
+            }
+            collapsed.clear()
 
             if (pill.isOn) return@runBatchFoldingOperation
 
@@ -109,9 +114,22 @@ class ShowCommentsToggle(
             for (range in ranges) {
                 val (start, end) = expandRange(ed.document, range)
                 if (start >= end) continue
-                val region = model.addFoldRegion(start, end, "") ?: continue
-                region.isExpanded = false
-                regions.add(region)
+                val region = model.addFoldRegion(start, end, "")
+                if (region != null) {
+                    region.isExpanded = false
+                    regions.add(region)
+                } else {
+                    val existing =
+                        model.allFoldRegions.firstOrNull {
+                            it.isValid &&
+                                it.startOffset <= start &&
+                                it.endOffset >= end
+                        }
+                    if (existing != null && existing.isExpanded && existing !in collapsed) {
+                        existing.isExpanded = false
+                        collapsed.add(existing)
+                    }
+                }
             }
         }
     }
@@ -121,6 +139,15 @@ class ShowCommentsToggle(
         if (list == null) {
             list = mutableListOf()
             ed.putUserData(REGIONS_KEY, list)
+        }
+        return list
+    }
+
+    private fun collapsedFor(ed: Editor): MutableList<FoldRegion> {
+        var list = ed.getUserData(COLLAPSED_KEY)
+        if (list == null) {
+            list = mutableListOf()
+            ed.putUserData(COLLAPSED_KEY, list)
         }
         return list
     }
@@ -182,5 +209,6 @@ class ShowCommentsToggle(
     companion object {
         private val STATE_KEY = Key.create<Boolean>("codefocus.showComments.isOn")
         private val REGIONS_KEY = Key.create<MutableList<FoldRegion>>("codefocus.showComments.regions")
+        private val COLLAPSED_KEY = Key.create<MutableList<FoldRegion>>("codefocus.showComments.collapsed")
     }
 }
