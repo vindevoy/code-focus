@@ -27,6 +27,12 @@
       "Bash(git stash*)",
       "Bash(git ls-remote*)",
       "Bash(git ls-files*)",
+      "Bash(git rebase*)",
+      "Bash(git merge*)",
+      "Bash(git reset*)",
+      "Bash(git revert*)",
+      "Bash(git cherry-pick*)",
+      "Bash(git tag*)",
 
       "Bash(glab *)",
 
