@@ -47,6 +47,20 @@ That command has no `$VAR` and is pre-approved in `.claude/settings.json` via th
 
 The same "simple expansion" prompt fires on **any** bash argument containing `$VAR` — not just gradle invocations. The most common case is `echo "JAVA_HOME=$JAVA_HOME"` or similar status-checking lines. Don't write those: use `printenv VAR` (or `env | grep VAR`) instead — both read the variable directly without quoted expansion in an argument, neither trips the prompt, and `printenv*` / `env *` are pre-approved. Same for any other env probe — `printenv` first, never `echo "$VAR"`.
 
+### Python tooling: `uv tool`, never pip / pipx / sudo apt
+
+Whenever you need a Python developer tool (today: `ruff`; tomorrow probably `mypy`, `pytest`, etc.), reach for **`uv`** — `uv` is on PATH at `/home/vindevoy/.local/bin/uv` and `uv tool *` / `uvx *` are pre-approved in `.claude/settings.json`. The two recipes you actually need:
+
+```sh
+# one-shot run, no install side effects
+uv tool run ruff format <file>      # equivalent: uvx ruff format <file>
+
+# persistent install of a tool, kept in uv's tool-env
+uv tool install ruff
+```
+
+Do **not** reach for `pip3 install --user`, `pipx install`, or `sudo apt-get install` to satisfy a missing tool. All three trip permission prompts, two of them touch system-wide state, and none of them are needed when `uv` is available. The tool-existence check before invoking is fine via `command -v <tool>` (also pre-approved); skip the install attempt entirely when the tool is already present.
+
 
 ## Project Overview
 

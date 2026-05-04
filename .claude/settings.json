@@ -38,6 +38,8 @@
 
       "Bash(python3 *)",
       "Bash(python *)",
+      "Bash(uv tool *)",
+      "Bash(uvx *)",
 
       "Bash(ls *)",
       "Bash(cat *)",
@@ -55,6 +57,9 @@
       "Bash(env *)",
       "Bash(printenv*)",
       "Bash(which *)",
+      "Bash(command -v *)",
+      "Bash(type *)",
+      "Bash(hash *)",
       "Bash(echo *)",
       "Bash(printf *)",
       "Bash(true)",
