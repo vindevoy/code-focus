@@ -11,11 +11,12 @@ class CodeFocusToggleBarTest {
     @Test
     fun `bar contains all toggles in reading order`() {
         val bar = CodeFocusToggleBar()
-        assertEquals(4, bar.componentCount)
+        assertEquals(5, bar.componentCount)
         assertSame(bar.showComments, bar.getComponent(0))
         assertSame(bar.showBlankLines, bar.getComponent(1))
         assertSame(bar.showLineNumbers, bar.getComponent(2))
         assertSame(bar.showLoggingLines, bar.getComponent(3))
+        assertSame(bar.showImports, bar.getComponent(4))
     }
 
     @Test
