@@ -107,6 +107,8 @@ class ShowLoggingLinesToggle(
         label.toolTipText = toolTipText
     }
 
+    fun reApply() = applyToEditor()
+
     private fun applyToEditor() {
         val ed = editor ?: return
         val model = ed.foldingModel

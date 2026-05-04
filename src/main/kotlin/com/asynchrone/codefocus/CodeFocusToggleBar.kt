@@ -6,8 +6,9 @@ import java.awt.FlowLayout
 import javax.swing.JPanel
 
 /**
- * Single notification panel that hosts both Code Focus toggles side by side
- * so they share one editor-notification row instead of stacking vertically.
+ * Single notification panel that hosts every Code Focus toggle and the
+ * Re-Apply button side by side so they share one editor-notification row
+ * instead of stacking vertically.
  */
 class CodeFocusToggleBar(
     editor: Editor? = null,
@@ -17,6 +18,7 @@ class CodeFocusToggleBar(
     val showLineNumbers = ShowLineNumbersToggle(editor)
     val showLoggingLines = ShowLoggingLinesToggle(editor)
     val showImports = ShowImportsToggle(editor)
+    val reApplyButton = ReApplyButton(this)
 
     init {
         isOpaque = false
@@ -26,5 +28,21 @@ class CodeFocusToggleBar(
         add(showLineNumbers)
         add(showLoggingLines)
         add(showImports)
+        add(reApplyButton)
+    }
+
+    /**
+     * Re-runs every toggle's hide logic against the editor's current PSI,
+     * picking up any new comment / docstring / blank line / import / logging
+     * line the developer typed since the last toggle change. Idempotent;
+     * does nothing for toggles that are currently in their visible-by-default
+     * state.
+     */
+    fun reApply() {
+        showComments.reApply()
+        showBlankLines.reApply()
+        showLineNumbers.reApply()
+        showLoggingLines.reApply()
+        showImports.reApply()
     }
 }

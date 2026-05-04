@@ -87,6 +87,8 @@ class ShowLineNumbersToggle(
         label.toolTipText = toolTipText
     }
 
+    fun reApply() = applyToEditor()
+
     private fun applyToEditor() {
         val ed = editor ?: return
         ed.settings.isLineNumbersShown = pill.isOn

@@ -1,6 +1,5 @@
 package com.asynchrone.codefocus
 
-import com.intellij.openapi.editor.Editor
 import com.intellij.util.ui.JBUI
 import java.awt.Color
 import java.awt.Cursor
@@ -14,19 +13,19 @@ import javax.swing.JLabel
 import javax.swing.JPanel
 
 /**
- * Pill-shaped "Re-Apply" button installed above each Python editor.
+ * Pill-shaped "Re-Apply" button. Shipped as the last child of [CodeFocusToggleBar].
  *
  * Re-runs every Code Focus toggle's hide logic against the editor's current
- * content. Use case: a toggle is OFF (e.g. Show Comments off, comments
- * hidden), the developer types a new comment line — the new comment shows
- * because the existing fold regions don't cover it. Click Re-Apply to fold
- * the newly typed lines too.
+ * content via [CodeFocusToggleBar.reApply]. Use case: a toggle is OFF (e.g.
+ * Show Comments off, comments hidden), the developer types a new comment line —
+ * the new comment shows because the existing fold regions don't cover it.
+ * Click Re-Apply to fold the newly typed lines too.
  *
  * Visible always; clicking does nothing when every toggle is in its ON
  * (visible) state, since there's nothing to re-hide.
  */
 class ReApplyButton(
-    private val editor: Editor? = null,
+    private val bar: CodeFocusToggleBar? = null,
 ) : JPanel(FlowLayout(FlowLayout.RIGHT, JBUI.scale(6), JBUI.scale(1))) {
     private val label = JLabel(CodeFocusBundle.message("button.reApply.label"))
 
@@ -41,7 +40,7 @@ class ReApplyButton(
         val click =
             object : MouseAdapter() {
                 override fun mouseClicked(e: MouseEvent) {
-                    editor?.let { ShowCommentsToggle.reApplyTo(it) }
+                    bar?.reApply()
                 }
             }
         addMouseListener(click)
