@@ -47,6 +47,7 @@
 
       "Bash(env)",
       "Bash(env *)",
+      "Bash(printenv*)",
       "Bash(which *)",
       "Bash(echo *)",
       "Bash(printf *)",
