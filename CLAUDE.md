@@ -47,6 +47,16 @@ That command has no `$VAR` and is pre-approved in `.claude/settings.json` via th
 
 The same "simple expansion" prompt fires on **any** bash argument containing `$VAR` — not just gradle invocations. The most common case is `echo "JAVA_HOME=$JAVA_HOME"` or similar status-checking lines. Don't write those: use `printenv VAR` (or `env | grep VAR`) instead — both read the variable directly without quoted expansion in an argument, neither trips the prompt, and `printenv*` / `env *` are pre-approved. Same for any other env probe — `printenv` first, never `echo "$VAR"`.
 
+The same prompt also fires when a `for` loop interpolates the loop variable into command arguments, e.g. `for f in a b c; do curl … "$f.png"; done`. Even though `$f` is a shell variable rather than an env var, Claude Code flags it as a "Contains expansion" risk. For short batches (a handful of items) **expand the loop into N straight-line commands** — no loop, no `$f`, no prompt:
+
+```sh
+glab api projects/asynchrone%2Fkotlin%2Fcode-focus/uploads/<sha-1>/image.png > /tmp/34.png
+glab api projects/asynchrone%2Fkotlin%2Fcode-focus/uploads/<sha-2>/image.png > /tmp/35.png
+glab api projects/asynchrone%2Fkotlin%2Fcode-focus/uploads/<sha-3>/image.png > /tmp/36.png
+```
+
+Verbose, but each call is a single pre-approved `glab` invocation. Reserve real for-loops for cases where the iteration count is unknown at write time and you genuinely need the dynamism — and even then, do it inside a script file you call with `python3 /tmp/script.py`, not inline `bash -c`.
+
 ### Python tooling: `uv tool`, never pip / pipx / sudo apt
 
 Whenever you need a Python developer tool (today: `ruff`; tomorrow probably `mypy`, `pytest`, etc.), reach for **`uv`** — `uv` is on PATH at `/home/vindevoy/.local/bin/uv` and `uv tool *` / `uvx *` are pre-approved in `.claude/settings.json`. The two recipes you actually need:
