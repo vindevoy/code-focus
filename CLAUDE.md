@@ -238,6 +238,13 @@ Recipes:
   glab api projects/asynchrone%2Fkotlin%2Fcode-focus/issues/<n>/discussions/<full-discussion-id>/notes -X POST \
     -F "body=@/tmp/reply.md"
   ```
+- **Download an upload (e.g. an image attached to an issue)**:
+  ```sh
+  glab api projects/asynchrone%2Fkotlin%2Fcode-focus/uploads/<sha>/image.png > /tmp/<n>.png
+  ```
+  The `<sha>` is the path segment shown in the markdown image link of the issue (`/uploads/<sha>/image.png`). `glab api` is already authenticated via `~/.config/glab-cli/config.yml`, so the request goes through without exposing the token.
+
+  **Never** download GitLab uploads by piping `curl` together with the token from the glab config — patterns like `curl … -H "PRIVATE-TOKEN: $(grep -oP 'token: \S+' ~/.config/glab-cli/config.yml … | awk …)"` mix the token into a `$(...)` command substitution that Claude Code's bash parser flags ("This command requires approval"), and they leak the token into the bash trace. `glab api` is the only sanctioned path.
 
 The full discussion ID is the SHA-style string returned by the discussions endpoint, not a truncated prefix.
 
