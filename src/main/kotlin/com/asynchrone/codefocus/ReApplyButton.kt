@@ -1,5 +1,6 @@
 package com.asynchrone.codefocus
 
+import com.intellij.ui.JBColor
 import com.intellij.util.ui.JBUI
 import java.awt.Color
 import java.awt.Cursor
@@ -35,6 +36,7 @@ class ReApplyButton(
         cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
         toolTipText = CodeFocusBundle.message("button.reApply.tooltip")
         label.border = JBUI.Borders.empty(2, 8)
+        label.foreground = JBColor.foreground()
         add(BackgroundPill(label))
 
         val click =
@@ -69,7 +71,9 @@ class ReApplyButton(
         }
 
         companion object {
-            private val BG_COLOR = Color(0xE5, 0xEB, 0xF1)
+            // Theme-aware: pale blue-grey on light, mid-grey on dark — readable against
+            // the editor notification row background in either theme.
+            private val BG_COLOR = JBColor(Color(0xE5, 0xEB, 0xF1), Color(0x4C, 0x50, 0x55))
         }
     }
 }
