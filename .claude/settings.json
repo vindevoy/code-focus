@@ -73,7 +73,9 @@
       "Read(//tmp/**)",
       "Read(//opt/**)",
 
-      "Edit(//home/vindevoy/Development/Kotlin/code-focus/**)"
+      "Edit(//home/vindevoy/Development/Kotlin/code-focus/**)",
+
+      "Write(//tmp/**)"
     ]
   }
 }
