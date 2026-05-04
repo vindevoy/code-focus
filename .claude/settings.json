@@ -71,7 +71,9 @@
       "Read(//home/vindevoy/.config/**)",
       "Read(//home/vindevoy/.local/share/JetBrains/**)",
       "Read(//tmp/**)",
-      "Read(//opt/**)"
+      "Read(//opt/**)",
+
+      "Edit(//home/vindevoy/Development/Kotlin/code-focus/**)"
     ]
   }
 }
