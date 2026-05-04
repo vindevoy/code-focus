@@ -86,6 +86,7 @@
       "Read(//opt/**)",
 
       "Edit(//home/vindevoy/Development/Kotlin/code-focus/**)",
+      "Edit(//home/vindevoy/Development/Kotlin/code-focus/.claude/**)",
 
       "Write(//tmp/**)"
     ]
