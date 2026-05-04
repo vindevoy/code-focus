@@ -57,6 +57,30 @@ glab api projects/asynchrone%2Fkotlin%2Fcode-focus/uploads/<sha-3>/image.png > /
 
 Verbose, but each call is a single pre-approved `glab` invocation. Reserve real for-loops for cases where the iteration count is unknown at write time and you genuinely need the dynamism — and even then, do it inside a script file you call with `python3 /tmp/script.py`, not inline `bash -c`.
 
+### No multi-line `python3 -c "…"` — use a heredoc or a temp file
+
+Claude Code flags any quoted bash argument that contains a `\n#` sequence with the "Newline followed by `#` inside a quoted argument can hide arguments from path validation" prompt. The pattern that triggered the issue was a multi-line `python3 -c "..."` whose script body included a Python `# comment` line — the `# ` inside the quoted argument is what matched the rule, even though the `#` is meant as a Python comment, not a bash one.
+
+There is no permission entry that bypasses this safety check. The fix is to never write multi-line `python3 -c "..."` in the first place. Use a heredoc:
+
+```sh
+python3 << 'EOF'
+import json, sys
+# this comment is fine — it's heredoc content, not a quoted argument
+data = json.load(sys.stdin)
+print(data["title"])
+EOF
+```
+
+Or stage the script in `/tmp` and run it as a file:
+
+```sh
+# Write the script via the Write tool to /tmp/script.py, then:
+python3 /tmp/script.py
+```
+
+Both forms are pre-approved (`Bash(python3 *)`) and don't trip the safety check. Reserve inline `python3 -c "..."` for genuine one-liners with no `#` characters and no newlines.
+
 ### Python tooling: `uv tool`, never pip / pipx / sudo apt
 
 Whenever you need a Python developer tool (today: `ruff`; tomorrow probably `mypy`, `pytest`, etc.), reach for **`uv`** — `uv` is on PATH at `/home/vindevoy/.local/bin/uv` and `uv tool *` / `uvx *` are pre-approved in `.claude/settings.json`. The two recipes you actually need:
