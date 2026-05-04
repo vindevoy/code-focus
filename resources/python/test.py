@@ -28,6 +28,11 @@ logger = logging.getLogger(__name__)
 
 
 def fetch(url: str, retries: int = MAX_RETRIES) -> dict:
+    from logging import getLogger
+
+    local_logger = getLogger("Test")
+    local_logger.debug("Just testing inline imports")
+
     """Fetch a URL and return the decoded JSON payload.
 
     Multi-line docstring with a blank line in the middle so the docstring
