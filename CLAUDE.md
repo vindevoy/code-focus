@@ -45,6 +45,8 @@ JAVA_HOME=/home/vindevoy/.local/share/JetBrains/Toolbox/apps/pycharm/jbr ./gradl
 
 That command has no `$VAR` and is pre-approved in `.claude/settings.json` via the `Bash(JAVA_HOME=* ./gradlew *)` pattern, so it runs without prompting. Reserve `export … && export PATH=…` only for interactive sessions where it matters.
 
+The same "simple expansion" prompt fires on **any** bash argument containing `$VAR` — not just gradle invocations. The most common case is `echo "JAVA_HOME=$JAVA_HOME"` or similar status-checking lines. Don't write those: use `printenv VAR` (or `env | grep VAR`) instead — both read the variable directly without quoted expansion in an argument, neither trips the prompt, and `printenv*` / `env *` are pre-approved. Same for any other env probe — `printenv` first, never `echo "$VAR"`.
+
 
 ## Project Overview
 
