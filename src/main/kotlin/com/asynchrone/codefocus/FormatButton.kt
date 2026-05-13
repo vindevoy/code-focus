@@ -13,31 +13,42 @@ import java.awt.Graphics2D
 import java.awt.RenderingHints
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
+import java.io.File
 import javax.swing.JLabel
 import javax.swing.JPanel
 
 /**
  * Pill-shaped "Format" button. Shipped as the seventh child of [CodeFocusToggleBar].
  *
- * Only visible when `ruff` is reachable on PATH (probed once at construction
- * time via `which ruff`). Clicking saves the editor's document, invokes
- * `ruff format <path>` against the file on a background thread, then refreshes
- * the VirtualFile so the editor picks up the reformatted content.
+ * Visible only when `ruff` is reachable for the project. Resolution order
+ * (probed once at construction):
+ *   1. `<project-base>/.venv/bin/ruff` (Linux/macOS) or
+ *      `<project-base>/.venv/Scripts/ruff.exe` (Windows) — the canonical
+ *      project venv set up by `resources/python/setup-uv-env.fish` (issue #41).
+ *   2. Whatever `which ruff` resolves to on the JVM's PATH.
  *
- * `ruffAvailable` is injectable so tests can construct the button without
- * depending on whether ruff happens to be installed on the test runner.
+ * Whichever path is found is stored verbatim and re-used at click time, so
+ * the button works whether ruff was installed system-wide or only inside the
+ * project venv. Clicking saves the editor's document, invokes
+ * `<resolved-ruff> format <file>` on a background thread, then refreshes the
+ * VirtualFile so the editor picks up the reformatted content.
+ *
+ * `ruffResolver` is injectable so tests can construct the button in either
+ * state without depending on whether ruff happens to be installed on the
+ * test runner.
  */
 class FormatButton(
     private val editor: Editor? = null,
-    private val ruffAvailable: () -> Boolean = ::defaultRuffAvailable,
+    ruffResolver: () -> String? = { defaultResolveRuff(editor) },
 ) : JPanel(FlowLayout(FlowLayout.RIGHT, JBUI.scale(6), JBUI.scale(1))) {
     private val label = JLabel(CodeFocusBundle.message("button.format.label"))
+    private val resolvedRuff: String? = ruffResolver()
 
     init {
         isOpaque = false
         border = JBUI.Borders.empty(1, 6)
 
-        if (ruffAvailable()) {
+        if (resolvedRuff != null) {
             cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
             toolTipText = CodeFocusBundle.message("button.format.tooltip")
             label.border = JBUI.Borders.empty(2, 8)
@@ -59,6 +70,7 @@ class FormatButton(
 
     private fun runFormat() {
         val ed = editor ?: return
+        val ruff = resolvedRuff ?: return
         val file = FileDocumentManager.getInstance().getFile(ed.document) ?: return
         val app = ApplicationManager.getApplication()
         app.invokeLater {
@@ -67,7 +79,7 @@ class FormatButton(
             }
             app.executeOnPooledThread {
                 runCatching {
-                    ProcessBuilder("ruff", "format", file.path)
+                    ProcessBuilder(ruff, "format", file.path)
                         .redirectErrorStream(true)
                         .start()
                         .waitFor()
@@ -107,15 +119,34 @@ class FormatButton(
     }
 
     companion object {
-        fun defaultRuffAvailable(): Boolean =
-            try {
+        fun defaultResolveRuff(editor: Editor?): String? {
+            val basePath = editor?.project?.basePath
+            if (basePath != null) {
+                for (rel in listOf(".venv/bin/ruff", ".venv/Scripts/ruff.exe")) {
+                    val candidate = File(basePath, rel)
+                    if (candidate.exists() && candidate.canExecute()) {
+                        return candidate.absolutePath
+                    }
+                }
+            }
+            return try {
                 val proc =
                     ProcessBuilder("which", "ruff")
                         .redirectErrorStream(true)
                         .start()
-                proc.waitFor() == 0
+                if (proc.waitFor() == 0) {
+                    val out =
+                        proc.inputStream
+                            .bufferedReader()
+                            .readText()
+                            .trim()
+                    out.takeIf { it.isNotEmpty() }
+                } else {
+                    null
+                }
             } catch (e: Exception) {
-                false
+                null
             }
+        }
     }
 }

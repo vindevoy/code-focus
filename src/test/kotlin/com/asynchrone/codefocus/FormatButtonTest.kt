@@ -9,27 +9,27 @@ import javax.swing.JLabel
 
 class FormatButtonTest {
     @Test
-    fun `button shows the Format label when ruff is available`() {
-        val button = FormatButton(ruffAvailable = { true })
+    fun `button shows the Format label when ruff is resolvable`() {
+        val button = FormatButton(ruffResolver = { "/fake/ruff" })
         val label = collectLabels(button).firstOrNull { it.text == "Format" }
         assertNotNull(label, "Button should contain a JLabel reading Format")
     }
 
     @Test
-    fun `button has the explanatory tooltip when ruff is available`() {
-        val button = FormatButton(ruffAvailable = { true })
+    fun `button has the explanatory tooltip when ruff is resolvable`() {
+        val button = FormatButton(ruffResolver = { "/fake/ruff" })
         assertEquals("Run ruff format on this file.", button.toolTipText)
     }
 
     @Test
-    fun `button is visible when ruff is available`() {
-        val button = FormatButton(ruffAvailable = { true })
+    fun `button is visible when ruff is resolvable`() {
+        val button = FormatButton(ruffResolver = { "/fake/ruff" })
         assertTrue(button.isVisible)
     }
 
     @Test
-    fun `button is invisible when ruff is unavailable`() {
-        val button = FormatButton(ruffAvailable = { false })
+    fun `button is invisible when ruff cannot be resolved`() {
+        val button = FormatButton(ruffResolver = { null })
         assertFalse(button.isVisible)
     }
 
