@@ -3,42 +3,17 @@
     "allow": [
       "Bash(./gradlew *)",
       "Bash(JAVA_HOME=* ./gradlew *)",
-      "Bash(JAVA_HOME=/home/* *)",
-      "Bash(JAVA_HOME=* git *)",
       "Bash(./hooks/*)",
+      "Bash(./resources/python/setup-uv-env.fish)",
+      "Bash(./resources/set-java-home.fish)",
+      "Bash(fish -c *)",
 
-      "Bash(git status*)",
-      "Bash(git diff*)",
-      "Bash(git log*)",
-      "Bash(git show*)",
-      "Bash(git fetch*)",
-      "Bash(git pull*)",
-      "Bash(git branch*)",
-      "Bash(git checkout*)",
-      "Bash(git switch*)",
-      "Bash(git restore*)",
-      "Bash(git add*)",
-      "Bash(git commit*)",
-      "Bash(git push*)",
-      "Bash(git rm*)",
-      "Bash(git mv*)",
-      "Bash(git config*)",
-      "Bash(git remote*)",
-      "Bash(git stash*)",
-      "Bash(git ls-remote*)",
-      "Bash(git ls-files*)",
-      "Bash(git rebase*)",
-      "Bash(git merge*)",
-      "Bash(git reset*)",
-      "Bash(git revert*)",
-      "Bash(git cherry-pick*)",
-      "Bash(git tag*)",
-
+      "Bash(git *)",
       "Bash(glab *)",
 
-      "Bash(python3 *)",
       "Bash(python *)",
-      "Bash(uv tool *)",
+      "Bash(python3 *)",
+      "Bash(uv *)",
       "Bash(uvx *)",
 
       "Bash(ls *)",
@@ -68,26 +43,9 @@
       "Bash(rm /tmp/*)",
       "Bash(cat > /tmp/*)",
       "Bash(cat >> /tmp/*)",
-      "Bash(chmod +x hooks/*)",
-      "Bash(chmod +x ./hooks/*)",
       "Bash(chmod +x *)",
 
-      "Bash(fish -c *)",
-
-      "Bash(/home/vindevoy/.local/share/JetBrains/Toolbox/apps/*/jbr/bin/java *)",
-      "Bash(/home/vindevoy/.local/share/JetBrains/Toolbox/apps/*/jbr/bin/javac *)",
-
-      "Read(//home/vindevoy/Development/Kotlin/code-focus/**)",
-      "Read(//home/vindevoy/.gradle/**)",
-      "Read(//home/vindevoy/.claude/**)",
-      "Read(//home/vindevoy/.config/**)",
-      "Read(//home/vindevoy/.local/share/JetBrains/**)",
       "Read(//tmp/**)",
-      "Read(//opt/**)",
-
-      "Edit(//home/vindevoy/Development/Kotlin/code-focus/**)",
-      "Edit(//home/vindevoy/Development/Kotlin/code-focus/.claude/**)",
-
       "Write(//tmp/**)"
     ]
   }
