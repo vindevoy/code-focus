@@ -34,7 +34,7 @@ import javax.swing.JPanel
  */
 class ShowBlankLinesToggle(
     private val editor: Editor? = null,
-) : JPanel(FlowLayout(FlowLayout.RIGHT, JBUI.scale(6), JBUI.scale(1))) {
+) : JPanel(FlowLayout(FlowLayout.RIGHT, JBUI.scale(2), JBUI.scale(1))) {
     private val pill = Pill()
     private val label = JLabel(CodeFocusBundle.message("toggle.showBlankLines.label"))
 
@@ -51,7 +51,7 @@ class ShowBlankLinesToggle(
 
     init {
         isOpaque = false
-        border = JBUI.Borders.empty(1, 6)
+        border = JBUI.Borders.empty(1, 2)
         cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
         add(label)
         add(pill)

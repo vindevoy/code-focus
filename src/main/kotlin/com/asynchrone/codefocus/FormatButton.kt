@@ -40,18 +40,18 @@ import javax.swing.JPanel
 class FormatButton(
     private val editor: Editor? = null,
     ruffResolver: () -> String? = { defaultResolveRuff(editor) },
-) : JPanel(FlowLayout(FlowLayout.RIGHT, JBUI.scale(6), JBUI.scale(1))) {
+) : JPanel(FlowLayout(FlowLayout.RIGHT, JBUI.scale(2), JBUI.scale(1))) {
     private val label = JLabel(CodeFocusBundle.message("button.format.label"))
     private val resolvedRuff: String? = ruffResolver()
 
     init {
         isOpaque = false
-        border = JBUI.Borders.empty(1, 6)
+        border = JBUI.Borders.empty(1, 2)
 
         if (resolvedRuff != null) {
             cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
             toolTipText = CodeFocusBundle.message("button.format.tooltip")
-            label.border = JBUI.Borders.empty(2, 8)
+            label.border = JBUI.Borders.empty(2, 6)
             label.foreground = JBColor.foreground()
             add(BackgroundPill(label))
 

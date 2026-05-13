@@ -12,7 +12,7 @@ import javax.swing.JPanel
  */
 class CodeFocusToggleBar(
     editor: Editor? = null,
-) : JPanel(FlowLayout(FlowLayout.RIGHT, JBUI.scale(8), JBUI.scale(1))) {
+) : JPanel(FlowLayout(FlowLayout.RIGHT, JBUI.scale(4), JBUI.scale(1))) {
     val showComments = ShowCommentsToggle(editor)
     val showBlankLines = ShowBlankLinesToggle(editor)
     val showLineNumbers = ShowLineNumbersToggle(editor)
@@ -23,7 +23,7 @@ class CodeFocusToggleBar(
 
     init {
         isOpaque = false
-        border = JBUI.Borders.empty(1, 6)
+        border = JBUI.Borders.empty(1, 2)
         add(showComments)
         add(showBlankLines)
         add(showLineNumbers)
