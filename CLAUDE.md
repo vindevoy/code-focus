@@ -17,6 +17,8 @@ If Claude needs a new command shape that isn't covered:
 
 `.gitignore` is set up so only `.claude/settings.json` is tracked; all other files under `.claude/` (including `settings.local.json` and any runtime state) stay local.
 
+**Editing `.claude/settings.json` itself prompts by design.** The dialog reads "Yes / Yes, and allow Claude to edit its own settings for this session / No". Even with `Edit(//.../code-focus/**)` and `Edit(//.../code-focus/.claude/**)` in the allow list, Claude Code surfaces a separate self-config-edit prompt to keep allowlist mutations explicit. There is no `.claude/settings.json` entry that suppresses it (by design — the prompt protects against silent self-elevation). When you know you'll be doing several allowlist additions in one session, pick option 2 ("Yes, and allow Claude to edit its own settings for this session") on the first prompt; subsequent edits within that session land without further prompts.
+
 ### Avoid `~` in Bash assignments
 
 Claude Code flags `~` on the right-hand side of a bash assignment with a "Tilde in assignment value — bash may expand at assignment time" prompt, which interrupts every invocation. Use **absolute paths** (e.g. `/home/vindevoy/.local/share/JetBrains/Toolbox/apps/pycharm/jbr`) or `$HOME/...` instead of `~/...` when writing bash commands — both for `export VAR=...` and for direct binary invocations. The allow patterns in `.claude/settings.json` are already written with absolute paths to match.
