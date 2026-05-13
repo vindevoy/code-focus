@@ -9,6 +9,7 @@ import com.intellij.psi.PsiComment
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiElement
 import com.intellij.psi.util.PsiTreeUtil
+import com.intellij.ui.JBColor
 import com.intellij.util.ui.JBUI
 import com.jetbrains.python.psi.PyExpressionStatement
 import com.jetbrains.python.psi.PyStatement
@@ -239,8 +240,8 @@ class ShowCommentsToggle(
         }
 
         companion object {
-            private val ON_COLOR = Color(0x4FAEEF)
-            private val OFF_COLOR = Color(0x9AA0A6)
+            private val ON_COLOR = JBColor(Color(0xE5, 0xEB, 0xF1), Color(0x4C, 0x50, 0x55))
+            private val OFF_COLOR = JBColor(Color(0xC0, 0xC4, 0xC8), Color(0x66, 0x68, 0x6C))
         }
     }
 
