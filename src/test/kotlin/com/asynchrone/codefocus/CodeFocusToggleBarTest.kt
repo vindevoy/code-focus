@@ -9,15 +9,16 @@ import java.awt.FlowLayout
 
 class CodeFocusToggleBarTest {
     @Test
-    fun `bar contains all toggles and the Re-Apply button in reading order`() {
+    fun `bar contains all toggles, the Re-Apply button, and the Format button in reading order`() {
         val bar = CodeFocusToggleBar()
-        assertEquals(6, bar.componentCount)
+        assertEquals(7, bar.componentCount)
         assertSame(bar.showComments, bar.getComponent(0))
         assertSame(bar.showBlankLines, bar.getComponent(1))
         assertSame(bar.showLineNumbers, bar.getComponent(2))
         assertSame(bar.showLoggingLines, bar.getComponent(3))
         assertSame(bar.showImports, bar.getComponent(4))
         assertSame(bar.reApplyButton, bar.getComponent(5))
+        assertSame(bar.formatButton, bar.getComponent(6))
     }
 
     @Test

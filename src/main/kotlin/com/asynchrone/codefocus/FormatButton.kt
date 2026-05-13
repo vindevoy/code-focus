@@ -1,0 +1,121 @@
+package com.asynchrone.codefocus
+
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.editor.Editor
+import com.intellij.openapi.fileEditor.FileDocumentManager
+import com.intellij.ui.JBColor
+import com.intellij.util.ui.JBUI
+import java.awt.Color
+import java.awt.Cursor
+import java.awt.FlowLayout
+import java.awt.Graphics
+import java.awt.Graphics2D
+import java.awt.RenderingHints
+import java.awt.event.MouseAdapter
+import java.awt.event.MouseEvent
+import javax.swing.JLabel
+import javax.swing.JPanel
+
+/**
+ * Pill-shaped "Format" button. Shipped as the seventh child of [CodeFocusToggleBar].
+ *
+ * Only visible when `ruff` is reachable on PATH (probed once at construction
+ * time via `which ruff`). Clicking saves the editor's document, invokes
+ * `ruff format <path>` against the file on a background thread, then refreshes
+ * the VirtualFile so the editor picks up the reformatted content.
+ *
+ * `ruffAvailable` is injectable so tests can construct the button without
+ * depending on whether ruff happens to be installed on the test runner.
+ */
+class FormatButton(
+    private val editor: Editor? = null,
+    private val ruffAvailable: () -> Boolean = ::defaultRuffAvailable,
+) : JPanel(FlowLayout(FlowLayout.RIGHT, JBUI.scale(6), JBUI.scale(1))) {
+    private val label = JLabel(CodeFocusBundle.message("button.format.label"))
+
+    init {
+        isOpaque = false
+        border = JBUI.Borders.empty(1, 6)
+
+        if (ruffAvailable()) {
+            cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+            toolTipText = CodeFocusBundle.message("button.format.tooltip")
+            label.border = JBUI.Borders.empty(2, 8)
+            label.foreground = JBColor.foreground()
+            add(BackgroundPill(label))
+
+            val click =
+                object : MouseAdapter() {
+                    override fun mouseClicked(e: MouseEvent) {
+                        runFormat()
+                    }
+                }
+            addMouseListener(click)
+            label.addMouseListener(click)
+        } else {
+            isVisible = false
+        }
+    }
+
+    private fun runFormat() {
+        val ed = editor ?: return
+        val file = FileDocumentManager.getInstance().getFile(ed.document) ?: return
+        val app = ApplicationManager.getApplication()
+        app.invokeLater {
+            app.runWriteAction {
+                FileDocumentManager.getInstance().saveDocument(ed.document)
+            }
+            app.executeOnPooledThread {
+                runCatching {
+                    ProcessBuilder("ruff", "format", file.path)
+                        .redirectErrorStream(true)
+                        .start()
+                        .waitFor()
+                }
+                app.invokeLater {
+                    file.refresh(false, false)
+                }
+            }
+        }
+    }
+
+    private class BackgroundPill(
+        private val inner: JLabel,
+    ) : JPanel(FlowLayout(FlowLayout.CENTER, 0, 0)) {
+        init {
+            isOpaque = false
+            cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+            add(inner)
+        }
+
+        override fun paintComponent(g: Graphics) {
+            val g2 = g.create() as Graphics2D
+            try {
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
+                g2.color = BG_COLOR
+                g2.fillRoundRect(0, 0, width - 1, height - 1, height, height)
+            } finally {
+                g2.dispose()
+            }
+            super.paintComponent(g)
+        }
+
+        companion object {
+            // Same theme-aware tone as the Re-Apply button.
+            private val BG_COLOR = JBColor(Color(0xE5, 0xEB, 0xF1), Color(0x4C, 0x50, 0x55))
+        }
+    }
+
+    companion object {
+        fun defaultRuffAvailable(): Boolean =
+            try {
+                val proc =
+                    ProcessBuilder("which", "ruff")
+                        .redirectErrorStream(true)
+                        .start()
+                proc.waitFor() == 0
+            } catch (e: Exception) {
+                false
+            }
+    }
+}

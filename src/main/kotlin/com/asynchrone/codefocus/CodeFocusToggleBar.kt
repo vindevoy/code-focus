@@ -6,9 +6,9 @@ import java.awt.FlowLayout
 import javax.swing.JPanel
 
 /**
- * Single notification panel that hosts every Code Focus toggle and the
- * Re-Apply button side by side so they share one editor-notification row
- * instead of stacking vertically.
+ * Single notification panel that hosts every Code Focus toggle, the Re-Apply
+ * button, and the Format button side by side so they share one
+ * editor-notification row instead of stacking vertically.
  */
 class CodeFocusToggleBar(
     editor: Editor? = null,
@@ -19,6 +19,7 @@ class CodeFocusToggleBar(
     val showLoggingLines = ShowLoggingLinesToggle(editor)
     val showImports = ShowImportsToggle(editor)
     val reApplyButton = ReApplyButton(this)
+    val formatButton = FormatButton(editor)
 
     init {
         isOpaque = false
@@ -29,6 +30,7 @@ class CodeFocusToggleBar(
         add(showLoggingLines)
         add(showImports)
         add(reApplyButton)
+        add(formatButton)
     }
 
     /**
