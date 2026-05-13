@@ -225,6 +225,36 @@ A reasonable rhythm is one consolidated note after each batch of related commits
 
 Notes go on the issue itself (top-level note or threaded reply inside an existing discussion when the work resolves a specific remark), **never on the merge request**, so feedback and traceability stay in one place. Every note carries the attribution line described in [GitLab note attribution](#gitlab-note-attribution).
 
+### Issue state labels
+
+The project uses three GitLab labels as a state machine between the user and Claude. They are the unambiguous, glanceable signal of "whose turn is it" — preferred over scrolling the CLI for the most recent message. The labels exist on the project already; never invent new variants.
+
+- **`Waiting`** — Claude is waiting for the user. Claude **adds** this whenever it has just posted a status note that needs a human reply (work ready for review, follow-up on a remark, anything that ends with "your turn"). The user **removes** it when they respond with a new comment, mark a discussion resolved, or otherwise re-engage. Until the label is gone, Claude should not assume new feedback exists — re-poll, but don't push speculative changes.
+- **`Merge`** — The user is signalling that no remarks are open and Claude should now create the merge request. Claude treats this label as equivalent to the verbal "mr" / "make MR" order (either path is valid). On detecting `Merge`, Claude opens the MR and then **removes `Merge`** in the same step.
+- **`Merge Request`** — Claude **adds** this immediately after creating the MR. The user takes it from there: review, approve, merge. **Claude never performs the merge itself** — only creates the MR.
+
+Setting / removing a label via glab:
+
+```sh
+# Add a label
+glab api projects/asynchrone%2Fkotlin%2Fcode-focus/issues/<n> -X PUT -f "add_labels=Waiting"
+
+# Remove a label
+glab api projects/asynchrone%2Fkotlin%2Fcode-focus/issues/<n> -X PUT -f "remove_labels=Merge"
+
+# Swap one for another in a single call (used after creating the MR):
+glab api projects/asynchrone%2Fkotlin%2Fcode-focus/issues/<n> -X PUT -f "remove_labels=Merge" -f "add_labels=Merge Request"
+```
+
+The whole-life sequence on a typical issue:
+
+1. User opens issue → no state label.
+2. Claude implements + posts status note → adds `Waiting`.
+3. User reviews, leaves remark → user removes `Waiting`.
+4. Claude addresses remark → re-adds `Waiting`. Repeat 3–4 until accepted.
+5. User adds `Merge` → Claude opens MR, removes `Merge`, adds `Merge Request`.
+6. User merges → user closes the issue.
+
 ### Branching strategy
 
 - **main**: Production-ready code. Merges come from release branches only
@@ -252,6 +282,24 @@ Both `main` and `develop` are **protected** on GitLab:
 
 Release, feature, bugfix, and hotfix branches are **not** protected — they are short-lived and owned by whoever is working on them.
 
+### Switching branches: always rebase, clean up after merges
+
+Two rules whenever Claude moves between branches:
+
+1. **Switching to an existing feature/bugfix/hotfix branch always starts with `git rebase develop`**. The target branch may have been opened days ago and develop has typically moved since (other MRs landed). Working on a stale base hides conflicts until MR time and silently re-introduces issues that were already fixed on develop. Pull develop first, then `git checkout <branch> && git rebase develop`. If the rebase rewrites the original commit subject (a known mangle when the rebase hits a conflict), restore it via `git commit --amend -m "…"` before pushing. Force-push with `--force-with-lease`.
+2. **Switching away because an issue was just closed/merged means the local branch is dead — delete it before starting the next one.** Run the standard cleanup before checking out the next branch:
+
+   ```sh
+   git checkout develop
+   git pull --ff-only origin develop
+   git branch -d <merged-branch>
+   git fetch --prune
+   ```
+
+   `git branch -d` (lowercase) refuses to delete an unmerged branch — that's the safety we want. If multiple merged branches piled up across rounds, run `git branch --merged develop | grep -v develop` to find them and delete them in one batch.
+
+The two rules compose for the common path "merged X, now start on Y": cleanup after X, then `git checkout Y && git rebase develop` even if Y already exists.
+
 ### Workflow for each issue
 
 1. Receive the issue number from the user on the CLI
@@ -261,8 +309,8 @@ Release, feature, bugfix, and hotfix branches are **not** protected — they are
 5. Implement the changes, committing as you go
 6. Tests run automatically before each commit (pre-commit hook) and full suite before each push (pre-push hook)
 7. Push commits to origin
-8. Notify the user on the CLI **and** post a status note on the GitLab issue that the work is ready for review. **All status updates and progress notes go on the issue, not on a merge request** — keep the conversation in one place so feedback does not scatter
-9. **Wait for the user to give the explicit order to create the merge request.** Claude does **not** create the MR autonomously, even when the work looks ready and even when phrasings like "continue", "next issue", or "you know the drill" are used — none of those grant MR-creation authority. When the user says "mr" / "make MR" / "open the MR" or equivalent, Claude opens the MR with `glab api projects/<id>/merge_requests -X POST -F "description=@/tmp/file.md" … -f remove_source_branch=true` against `develop` (or `main` for hotfixes), and never approves or merges it
+8. Notify the user on the CLI **and** post a status note on the GitLab issue that the work is ready for review. **All status updates and progress notes go on the issue, not on a merge request** — keep the conversation in one place so feedback does not scatter. **Then add the `Waiting` label to the issue** so the user can see at a glance which issues are blocked on them — see [Issue state labels](#issue-state-labels)
+9. **Wait for the user to add the `Merge` label** before opening the merge request. Verbal phrasings like "mr" / "make MR" still work as an explicit instruction (the label and the CLI order are interchangeable), but **do not infer MR authority from "continue", "next issue", "you know the drill" etc.** When `Merge` is on the issue, Claude opens the MR with `glab api projects/<id>/merge_requests -X POST -F "description=@/tmp/file.md" … -f remove_source_branch=true` against `develop` (or `main` for hotfixes), then **adds the `Merge Request` label and removes `Merge`** so the user sees the MR is ready for them. **Claude never approves or merges the MR — only creates it**
 10. The user reviews and tests — feedback goes into the GitLab issue
 11. Once accepted, the user approves and merges into `develop` (or `main` and `develop` for hotfixes)
 12. The user closes the issue manually on GitLab
