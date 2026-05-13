@@ -51,7 +51,7 @@ class FormatButton(
         if (resolvedRuff != null) {
             cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
             toolTipText = CodeFocusBundle.message("button.format.tooltip")
-            label.border = JBUI.Borders.empty(2, 6)
+            label.border = JBUI.Borders.empty(4, 10)
             label.foreground = JBColor.foreground()
             add(BackgroundPill(label))
 
@@ -105,7 +105,7 @@ class FormatButton(
             try {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
                 g2.color = BG_COLOR
-                val arc = JBUI.scale(2)
+                val arc = JBUI.scale(6)
                 g2.fillRoundRect(0, 0, width - 1, height - 1, arc, arc)
             } finally {
                 g2.dispose()

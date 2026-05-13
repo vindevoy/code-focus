@@ -37,7 +37,7 @@ import javax.swing.JPanel
  */
 class ShowLoggingLinesToggle(
     private val editor: Editor? = null,
-) : JPanel(FlowLayout(FlowLayout.RIGHT, JBUI.scale(2), JBUI.scale(1))) {
+) : JPanel(FlowLayout(FlowLayout.RIGHT, JBUI.scale(4), JBUI.scale(1))) {
     private val pill = Pill()
     private val label = JLabel(CodeFocusBundle.message("toggle.showLoggingLines.label"))
 
