@@ -63,7 +63,8 @@ class ReApplyButton(
             try {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
                 g2.color = BG_COLOR
-                g2.fillRoundRect(0, 0, width - 1, height - 1, height, height)
+                val arc = JBUI.scale(2)
+                g2.fillRoundRect(0, 0, width - 1, height - 1, arc, arc)
             } finally {
                 g2.dispose()
             }
