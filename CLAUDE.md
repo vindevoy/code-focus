@@ -83,6 +83,20 @@ python3 /tmp/script.py
 
 Both forms are pre-approved (`Bash(python3 *)`) and don't trip the safety check. Reserve inline `python3 -c "..."` for genuine one-liners with no `#` characters and no newlines.
 
+### One verb per Bash call — never chain different verbs
+
+The allow patterns in `.claude/settings.json` are matched against the **whole** bash command line, not against each piped/chained piece. So a compound like:
+
+```sh
+git rebase --abort && git branch foo origin/foo && git status -uno
+```
+
+does not match `Bash(git rebase*)` *or* `Bash(git status*)` cleanly — Claude Code surfaces a fresh permission prompt even though every individual verb is in the allow list. Same trap with `;` separators and pipes when the segments are different verbs.
+
+The rule: **one logical command per Bash tool call**. If you need to run several things in sequence, issue them as separate Bash calls. The runtime is fast enough that the overhead is negligible, and each call lands cleanly against the matching allow pattern with zero prompts.
+
+The one exception is multiple invocations of the **same verb** chained together, where the compound still matches the verb's prefix pattern — e.g. `git fetch && git checkout develop && git pull --ff-only origin develop` matches `Bash(git *)` and is fine. Mixing verbs (e.g. `git rebase --abort && git status`) is what trips the prompt.
+
 ### Python tooling: `uv tool`, never pip / pipx / sudo apt
 
 Whenever you need a Python developer tool (today: `ruff`; tomorrow probably `mypy`, `pytest`, etc.), reach for **`uv`** — `uv` is on PATH at `/home/vindevoy/.local/bin/uv` and `uv tool *` / `uvx *` are pre-approved in `.claude/settings.json`. The two recipes you actually need:
