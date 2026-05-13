@@ -101,7 +101,7 @@ class ShowLineNumbersToggle(
         var isOn: Boolean = true
 
         init {
-            val size = Dimension(JBUI.scale(36), JBUI.scale(20))
+            val size = Dimension(JBUI.scale(30), JBUI.scale(16))
             preferredSize = size
             minimumSize = size
             maximumSize = size
