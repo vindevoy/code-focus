@@ -282,6 +282,24 @@ Both `main` and `develop` are **protected** on GitLab:
 
 Release, feature, bugfix, and hotfix branches are **not** protected — they are short-lived and owned by whoever is working on them.
 
+### Switching branches: always rebase, clean up after merges
+
+Two rules whenever Claude moves between branches:
+
+1. **Switching to an existing feature/bugfix/hotfix branch always starts with `git rebase develop`**. The target branch may have been opened days ago and develop has typically moved since (other MRs landed). Working on a stale base hides conflicts until MR time and silently re-introduces issues that were already fixed on develop. Pull develop first, then `git checkout <branch> && git rebase develop`. If the rebase rewrites the original commit subject (a known mangle when the rebase hits a conflict), restore it via `git commit --amend -m "…"` before pushing. Force-push with `--force-with-lease`.
+2. **Switching away because an issue was just closed/merged means the local branch is dead — delete it before starting the next one.** Run the standard cleanup before checking out the next branch:
+
+   ```sh
+   git checkout develop
+   git pull --ff-only origin develop
+   git branch -d <merged-branch>
+   git fetch --prune
+   ```
+
+   `git branch -d` (lowercase) refuses to delete an unmerged branch — that's the safety we want. If multiple merged branches piled up across rounds, run `git branch --merged develop | grep -v develop` to find them and delete them in one batch.
+
+The two rules compose for the common path "merged X, now start on Y": cleanup after X, then `git checkout Y && git rebase develop` even if Y already exists.
+
 ### Workflow for each issue
 
 1. Receive the issue number from the user on the CLI
