@@ -19,3 +19,7 @@ build/
 # Python bytecode
 __pycache__/
 *.pyc
+
+# uv-managed virtual environment used as the PyCharm interpreter
+# (binaries + bytecode; recreated via resources/python/setup-uv-env.fish)
+.venv/

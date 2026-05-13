@@ -35,6 +35,18 @@ Better still: set `JAVA_HOME` (and similar) persistently in `~/.profile` so it n
 
 By default it points at `$HOME/.local/share/JetBrains/Toolbox/apps/pycharm/jbr`. Pass a different path as the first argument if PyCharm lives elsewhere on a given machine. The script is idempotent — re-runs are no-ops if `JAVA_HOME` is already in the fish config.
 
+### Python interpreter for PyCharm: `.venv` via `uv`
+
+The plugin is Kotlin, but the test fixtures in `resources/python/` are Python — and the **Format** button (issue #39) shells out to `ruff` against the file in the active editor. To exercise either, PyCharm needs a Python interpreter that has `ruff` on it, and the simplest way is a uv-managed virtual env at the project root:
+
+```sh
+./resources/python/setup-uv-env.fish
+```
+
+The script creates `.venv` at the project root (gitignored), installs the packages pinned in `resources/python/requirements.txt` (just `ruff` today; add more there as needed), and prints the path to plug into PyCharm. Re-runs are idempotent — existing `.venv` is reused, requirements are upgraded if newer versions match the constraint.
+
+Once the env is up, point PyCharm at `<project>/.venv/bin/python` via **Settings → Project: code-focus → Python Interpreter → Add Interpreter → Add Local Interpreter → Existing → Python path**. After that, the Format button on a `.py` editor finds `ruff` automatically.
+
 ### Running Gradle without tripping the simple-expansion prompt
 
 Claude Code also flags assignment values that contain a `$VAR` expansion (the "Contains simple expansion" prompt). The pattern that kept triggering it was the chained `export … && export PATH=$JAVA_HOME/bin:$PATH && ./gradlew …` prefix — `$JAVA_HOME` and `$PATH` are simple expansions in assignment values.
