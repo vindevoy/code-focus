@@ -211,7 +211,7 @@ class ShowBlankLinesToggle(
         var isOn: Boolean = true
 
         init {
-            val size = Dimension(JBUI.scale(26), JBUI.scale(14))
+            val size = Dimension(JBUI.scale(36), JBUI.scale(20))
             preferredSize = size
             minimumSize = size
             maximumSize = size
@@ -229,7 +229,7 @@ class ShowBlankLinesToggle(
                 val knob = height - inset * 2
                 val knobX = if (isOn) width - knob - inset else inset
                 g2.color = Color.WHITE
-                g2.fillOval(knobX, inset, knob, knob)
+                g2.fillRoundRect(knobX, inset, knob, knob, JBUI.scale(6), JBUI.scale(6))
             } finally {
                 g2.dispose()
             }
