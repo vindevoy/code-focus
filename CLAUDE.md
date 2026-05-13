@@ -109,6 +109,14 @@ The rule: **one logical command per Bash tool call**. If you need to run several
 
 The one exception is multiple invocations of the **same verb** chained together, where the compound still matches the verb's prefix pattern — e.g. `git fetch && git checkout develop && git pull --ff-only origin develop` matches `Bash(git *)` and is fine. Mixing verbs (e.g. `git rebase --abort && git status`) is what trips the prompt.
 
+### Editing files: use the Edit tool, never `sed -i`
+
+Claude Code's safety hook flags `sed -i` (and similar in-place editors) with "sed command contains operations that require explicit approval (e.g., write commands, execute commands)" because the `-i` flag silently rewrites files on disk — same risk class as raw write. There's no permission entry that bypasses this; in-place file rewrite is by design something the user has to confirm.
+
+The fix is **don't use `sed -i` at all**. The Edit tool is the right hammer for changing file content — it's deterministic, shows up in the conversation as a diff, and Claude Code's standard Edit allow (project tree) covers it without prompting. For multi-file changes, repeat the Edit call rather than reach for `sed`.
+
+`sed` without `-i` (read-only stream editing — e.g. `sed -n '5,10p' file` to print lines, or piping into something else) is fine and stays prompted only by general Bash policy.
+
 ### Python tooling: `uv tool`, never pip / pipx / sudo apt
 
 Whenever you need a Python developer tool (today: `ruff`; tomorrow probably `mypy`, `pytest`, etc.), reach for **`uv`** — `uv` is on PATH at `/home/vindevoy/.local/bin/uv` and `uv tool *` / `uvx *` are pre-approved in `.claude/settings.json`. The two recipes you actually need:
