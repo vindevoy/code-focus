@@ -43,11 +43,11 @@ class ShowCommentsToggleTest {
     }
 
     @Test
-    fun `label reads Show Comments`() {
+    fun `label reads Comments`() {
         val toggle = ShowCommentsToggle()
         val label = toggle.components.filterIsInstance<JLabel>().firstOrNull()
         assertNotNull(label, "Toggle should contain a JLabel for the description")
-        assertEquals("Show Comments", label!!.text)
+        assertEquals("Comments", label!!.text)
     }
 
     private fun click(component: Component) {

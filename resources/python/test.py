@@ -16,6 +16,9 @@ from dataclasses import dataclass
 from pathlib import Path  # inline comment on a from-import
 
 
+import math
+
+
 # Standalone comment between imports and the first top-level constant.
 MAX_RETRIES = 3  # inline comment on a constant assignment
 DEFAULT_NAME = "code-focus"
@@ -109,4 +112,5 @@ def main() -> int:
 
 # Trailing standalone comment at the very bottom of the file.
 if __name__ == "__main__":
+    print("test went well")
     sys.exit(main())

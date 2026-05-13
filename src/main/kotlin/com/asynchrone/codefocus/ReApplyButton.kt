@@ -27,15 +27,15 @@ import javax.swing.JPanel
  */
 class ReApplyButton(
     private val bar: CodeFocusToggleBar? = null,
-) : JPanel(FlowLayout(FlowLayout.RIGHT, JBUI.scale(6), JBUI.scale(1))) {
+) : JPanel(FlowLayout(FlowLayout.RIGHT, JBUI.scale(2), JBUI.scale(1))) {
     private val label = JLabel(CodeFocusBundle.message("button.reApply.label"))
 
     init {
         isOpaque = false
-        border = JBUI.Borders.empty(1, 6)
+        border = JBUI.Borders.empty(1, 2)
         cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
         toolTipText = CodeFocusBundle.message("button.reApply.tooltip")
-        label.border = JBUI.Borders.empty(2, 8)
+        label.border = JBUI.Borders.empty(4, 10)
         label.foreground = JBColor.foreground()
         add(BackgroundPill(label))
 
@@ -63,7 +63,8 @@ class ReApplyButton(
             try {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
                 g2.color = BG_COLOR
-                g2.fillRoundRect(0, 0, width - 1, height - 1, height, height)
+                val arc = JBUI.scale(6)
+                g2.fillRoundRect(0, 0, width - 1, height - 1, arc, arc)
             } finally {
                 g2.dispose()
             }
