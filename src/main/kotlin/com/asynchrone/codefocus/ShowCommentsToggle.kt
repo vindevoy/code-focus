@@ -232,7 +232,7 @@ class ShowCommentsToggle(
                 val inset = JBUI.scale(2)
                 val knob = height - inset * 2
                 val knobX = if (isOn) width - knob - inset else inset
-                g2.color = Color.WHITE
+                g2.color = JBColor.foreground()
                 g2.fillRoundRect(knobX, inset, knob, knob, JBUI.scale(6), JBUI.scale(6))
             } finally {
                 g2.dispose()
