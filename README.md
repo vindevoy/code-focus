@@ -51,7 +51,10 @@ This plugin is written in Kotlin, as this is the preferred language for JetBrain
 
 ## AI
 
-This plugin is completely written with the assistance of Claude CLI.
+- Although completely written by Claude, all code was reviewed by a human.
+- This project serves as an example of vibe coding with Claude CLI. All interaction is documented in each issue.
+- This is a study project for me ([vindevoy](https://gitlab.com/vindevoy)) on how interaction with Claude CLI can work best.
+- I have no experience in Kotlin, but 30 years of programming experience.
 
 
 ## Feedback
