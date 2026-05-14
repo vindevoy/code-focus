@@ -244,6 +244,52 @@ def main() -> int:
 - The repository is hosted on **GitLab** at https://gitlab.com/asynchrone/kotlin/code-focus and kept in sync with origin
 - Issues are tracked on the same GitLab project and used as the primary communication channel for feedback and remarks
 
+### GitHub mirror
+
+A read-only public mirror of this project lives at **https://github.com/vindevoy/code-focus**. GitLab pushes to it automatically — there is no manual `git push` to GitHub from a developer machine, and contributors should never commit on the GitHub side (anything they push there will be force-overwritten on the next mirror cycle).
+
+The mirror is configured in **GitLab → Settings → Repository → Mirroring repositories** as a *push* mirror with `only_protected_branches = true`. Because `main` and `develop` are the only protected branches on GitLab, the mirror sends exactly:
+
+- `refs/heads/main`
+- `refs/heads/develop`
+- every tag (e.g. `v1.0.0`) — tags are mirrored unconditionally
+
+Feature/bugfix/hotfix branches are **not** mirrored; they stay on GitLab.
+
+Authentication uses a fine-grained GitHub Personal Access Token scoped to the `vindevoy/code-focus` repo with `Contents: Read and write` (and the mandatory `Metadata: Read-only`). The token is embedded in the mirror URL and stored encrypted by GitLab — `glab api projects/.../remote_mirrors` returns it masked as `https://*****:*****@github.com/...`.
+
+To rotate the token:
+
+```sh
+# Replace mirror id 4047800 if it changes; new URL embeds the new token.
+glab api projects/asynchrone%2Fkotlin%2Fcode-focus/remote_mirrors/4047800 -X PUT \
+  -f url='https://vindevoy:<new-pat>@github.com/vindevoy/code-focus.git'
+
+# Force a fresh sync after rotation:
+glab api projects/asynchrone%2Fkotlin%2Fcode-focus/remote_mirrors/4047800/sync -X POST
+```
+
+To inspect mirror state (status, last sync, last error):
+
+```sh
+glab api projects/asynchrone%2Fkotlin%2Fcode-focus/remote_mirrors/4047800
+```
+
+### Publishing the plugin zip to GitHub Releases
+
+The mirror pushes git tags (e.g. `v1.0.0`) to GitHub but **does not** create GitHub Release objects or upload the `code-focus-<version>.zip` artifact. Without an attached asset, anyone who lands on the GitHub Releases page has no downloadable plugin — they would have to clone and build. To close that gap, run the helper script after each new tag is mirrored:
+
+```sh
+./gradlew buildPlugin
+GH_PAT=<github-pat> python3 resources/release/upload-github-release.py
+```
+
+The script reads `pluginVersion` from `gradle.properties`, expects `build/distributions/code-focus-<version>.zip` to exist, then either creates the GitHub Release for tag `v<version>` or reuses the existing one, and uploads the zip as a release asset. It is **idempotent** — re-runs are no-ops if the release and asset already exist, so it is safe to wire into a release ritual.
+
+The PAT is the same fine-grained token used by the GitLab mirror (`Contents: Read and write` on `vindevoy/code-focus`). Do not commit it; pass it inline as `GH_PAT=...` for the single invocation.
+
+The release body the script writes is intentionally minimal ("Code Focus release. See the GitLab project for full release notes."), because the authoritative release notes live on the GitLab Release page (which has the rich markdown produced from the MR description). If a richer GitHub-side body is wanted for a specific release, edit it directly on github.com after the upload — the script will not overwrite it on subsequent runs.
+
 ### Document everything on the issue
 
 **Every meaningful action Claude takes on an issue must be reflected on that issue.** The CLI transcript is ephemeral — the GitLab issue is the durable trace and the only place the user (or a future Claude session) can review what happened, in what order, and why.
