@@ -134,9 +134,12 @@ class ShowCommentsToggle(
                     ranges += stmt.textRange
                 }
             }
+            ranges.sortBy { it.startOffset }
+
+            var previousFoldEnd = 0
 
             for (range in ranges) {
-                val (start, end) = expandRange(ed.document, range)
+                val (start, end) = FoldExpansion.expand(ed.document, range, previousFoldEnd)
                 if (start >= end) continue
                 val coveredByCollapsed =
                     model.allFoldRegions.any {
@@ -150,6 +153,7 @@ class ShowCommentsToggle(
                 if (region != null) {
                     region.isExpanded = false
                     regions.add(region)
+                    previousFoldEnd = end
                 }
             }
         }
@@ -191,25 +195,6 @@ class ShowCommentsToggle(
             }
         }
         return hasContent
-    }
-
-    private fun expandRange(
-        document: Document,
-        range: TextRange,
-    ): Pair<Int, Int> {
-        val lineStart = document.getLineStartOffset(document.getLineNumber(range.startOffset))
-        val prefix = document.getText(TextRange(lineStart, range.startOffset))
-        if (prefix.any { !it.isWhitespace() }) {
-            return range.startOffset to range.endOffset
-        }
-        val end = range.endOffset
-        val withNewline =
-            if (end < document.textLength && document.charsSequence[end] == '\n') {
-                end + 1
-            } else {
-                end
-            }
-        return lineStart to withNewline
     }
 
     private class Pill : JComponent() {
