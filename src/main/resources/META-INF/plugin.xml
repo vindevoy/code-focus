@@ -10,5 +10,11 @@
     <resource-bundle>messages.CodeFocusBundle</resource-bundle>
 
     <extensions defaultExtensionNs="com.intellij">
+        <editorNotificationProvider implementation="com.asynchrone.codefocus.CodeFocusToggleBarProvider"/>
+        <projectConfigurable
+            instance="com.asynchrone.codefocus.CodeFocusConfigurable"
+            id="com.asynchrone.codefocus.settings"
+            displayName="Code Focus"
+            parentId="tools"/>
     </extensions>
 </idea-plugin>

@@ -1,0 +1,49 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./gradlew *)",
+      "Bash(./hooks/*)",
+      "Bash(./resources/python/setup-uv-env.fish)",
+      "Bash(./resources/set-java-home.fish)",
+      "Bash(JAVA_HOME=* ./gradlew *)",
+      "Bash(JAVA_HOME=* */gradlew *)",
+      "Bash(cat *)",
+      "Bash(chmod +x *)",
+      "Bash(command -v *)",
+      "Bash(diff *)",
+      "Bash(echo *)",
+      "Bash(env *)",
+      "Bash(env)",
+      "Bash(false)",
+      "Bash(file *)",
+      "Bash(find *)",
+      "Bash(fish -c *)",
+      "Bash(git *)",
+      "Bash(glab *)",
+      "Bash(grep *)",
+      "Bash(hash *)",
+      "Bash(head *)",
+      "Bash(ls *)",
+      "Bash(printenv*)",
+      "Bash(printf *)",
+      "Bash(python *)",
+      "Bash(python3 *)",
+      "Bash(rm /tmp/*)",
+      "Bash(stat *)",
+      "Bash(tail *)",
+      "Bash(tree *)",
+      "Bash(true)",
+      "Bash(type *)",
+      "Bash(uv *)",
+      "Bash(uvx *)",
+      "Bash(wc *)",
+      "Bash(which *)",
+
+      "Read(//tmp/**)",
+
+      "Write(//tmp/**)",
+
+      "Edit(//tmp/**)"
+    ]
+  }
+}

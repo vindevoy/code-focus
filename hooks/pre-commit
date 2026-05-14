@@ -1,9 +1,34 @@
 #!/bin/sh
 #
-# Git pre-commit hook: run fast unit tests before allowing a commit.
-# If any test fails, the commit is blocked.
+# Git pre-commit hook
+#
+# 1. If any Kotlin files are staged, run ktlintFormat to auto-fix style and
+#    formatting violations (the equivalent of `ruff check --fix` + `ruff format`).
+#    Re-stage the originally-staged Kotlin files so any auto-fixes go into the
+#    commit. Then run ktlintCheck to verify nothing is left; block the commit if
+#    violations remain or if either task fails.
+# 2. Run fast unit tests. If any test fails, block the commit.
 
 set -e
+
+STAGED_KT=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(kt|kts)$' || true)
+
+if [ -n "$STAGED_KT" ]; then
+    echo "[pre-commit] Running ktlintFormat (auto-fix style and formatting)..."
+    if ! ./gradlew --quiet ktlintFormat; then
+        echo "[pre-commit] ktlintFormat failed — see output above. Commit aborted."
+        exit 1
+    fi
+
+    echo "$STAGED_KT" | xargs git add
+
+    echo "[pre-commit] Running ktlintCheck (verify clean)..."
+    if ! ./gradlew --quiet ktlintCheck; then
+        echo "[pre-commit] ktlint found violations that auto-fix could not resolve."
+        echo "[pre-commit] See build/reports/ktlint/ for details. Commit aborted."
+        exit 1
+    fi
+fi
 
 echo "[pre-commit] Running fast unit tests..."
 ./gradlew --quiet test

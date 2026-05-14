@@ -10,3 +10,16 @@ build/
 *.secret
 
 .DS_Store
+
+# Claude Code: commit project-wide settings.json so the allow list syncs across machines.
+# Everything else under .claude/ is per-machine state and stays local.
+.claude/*
+!.claude/settings.json
+
+# Python bytecode
+__pycache__/
+*.pyc
+
+# uv-managed virtual environment used as the PyCharm interpreter
+# (binaries + bytecode; recreated via resources/python/setup-uv-env.fish)
+.venv/
