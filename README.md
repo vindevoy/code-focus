@@ -33,6 +33,42 @@ Until the plugin is published on the JetBrains Marketplace, install it manually 
 3. Restart the IDE.
 
 
+## Usage
+
+After installation, every Python (`.py`) editor in PyCharm gets a Code Focus toggle bar at the top — see the screenshot above.
+
+### Toggles
+
+Each toggle hides one category of visual noise. Click a toggle pill once to flip its state; toggle state is per file and persists across IDE restarts.
+
+- **Comments** — folds runs of `#` comment lines.
+- **Blank Lines** — collapses runs of blank lines.
+- **Line Numbers** — shows or hides the editor's line-number gutter for the current file.
+- **Logging Lines** — folds lines matching a configurable substring list (see [Settings](#settings) below for the defaults and how to edit them).
+- **Imports** — folds the top-of-file `import` / `from … import …` block.
+
+### Buttons
+
+- **Re-Apply** — re-runs every toggle's hide logic against the current file. Useful after typing new code (a fresh comment or logger call) that an active toggle should also hide. Always present.
+- **Format** — runs `ruff format` on the current file, then reloads the editor with the result. **Appears only when `ruff` is reachable** — the plugin first looks for `<project>/.venv/bin/ruff` (or `<project>/.venv/Scripts/ruff.exe` on Windows), then falls back to whatever `which ruff` returns on PATH. If neither finds it, the button is hidden.
+- **Fix** — runs `ruff check --fix` on the current file, then reloads. If ruff cannot auto-fix every issue, the remaining diagnostics open in a popup; a clean run is silent. Same `ruff` resolution as Format, so the two buttons appear and disappear together.
+
+In short: install `ruff` into your project's Python interpreter (for example `pip install ruff` inside the project's `.venv`, or `uv add --dev ruff`) and the Format and Fix buttons will show up the next time you open a `.py` file.
+
+### Settings
+
+**Settings → Tools → Code Focus** exposes the substring list used by the **Logging Lines** toggle. Each entry is a plain `String.contains` match — no regex syntax. Defaults cover the standard Python logging module:
+
+- `import logging`
+- `from logging import`
+- `LoggerFactory`
+- `logger.`
+- `logger =`
+- `logging.getLogger`
+
+Add or remove entries to match your project's logger conventions, then click **Apply**. The toggle re-evaluates immediately — no IDE restart needed.
+
+
 ## Build & run
 
 Standard Gradle commands from the JetBrains plugin template:
