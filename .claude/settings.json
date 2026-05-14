@@ -6,6 +6,7 @@
       "Bash(./resources/python/setup-uv-env.fish)",
       "Bash(./resources/set-java-home.fish)",
       "Bash(JAVA_HOME=* ./gradlew *)",
+      "Bash(JAVA_HOME=* */gradlew *)",
       "Bash(cat *)",
       "Bash(chmod +x *)",
       "Bash(command -v *)",
@@ -40,7 +41,9 @@
 
       "Read(//tmp/**)",
 
-      "Write(//tmp/**)"
+      "Write(//tmp/**)",
+
+      "Edit(//tmp/**)"
     ]
   }
 }
