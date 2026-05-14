@@ -2,16 +2,13 @@ package com.asynchrone.codefocus
 
 import com.intellij.openapi.options.Configurable
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.ui.DialogPanel
-import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTextArea
-import com.intellij.util.ui.FormBuilder
+import com.intellij.ui.dsl.builder.Align
+import com.intellij.ui.dsl.builder.AlignX
+import com.intellij.ui.dsl.builder.panel
 import com.intellij.util.ui.JBUI
-import javax.swing.BoxLayout
-import javax.swing.JButton
 import javax.swing.JComponent
-import javax.swing.JPanel
 import javax.swing.ScrollPaneConstants
 
 /**
@@ -28,7 +25,6 @@ class CodeFocusConfigurable(
     private val project: Project,
 ) : Configurable {
     private var patternsArea: JBTextArea? = null
-    private var rootPanel: DialogPanel? = null
 
     override fun getDisplayName(): String = CodeFocusBundle.message("settings.displayName")
 
@@ -41,46 +37,27 @@ class CodeFocusConfigurable(
                 text = currentPatternsAsText()
             }
         patternsArea = area
-
         val scroll =
             JBScrollPane(area).apply {
                 horizontalScrollBarPolicy = ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER
             }
-        val description =
-            JBLabel("<html>" + CodeFocusBundle.message("settings.loggingPatterns.description") + "</html>").apply {
-                border = JBUI.Borders.emptyBottom(8)
-                setAllowAutoWrapping(true)
+        return panel {
+            row {
+                comment(CodeFocusBundle.message("settings.loggingPatterns.description"))
+                    .align(AlignX.FILL)
+                    .resizableColumn()
             }
-
-        val restoreButton =
-            JButton(CodeFocusBundle.message("settings.loggingPatterns.restoreDefaults")).apply {
-                addActionListener {
+            row(CodeFocusBundle.message("settings.loggingPatterns.label")) {
+                cell(scroll)
+                    .align(Align.FILL)
+                    .resizableColumn()
+            }.resizableRow()
+            row {
+                button(CodeFocusBundle.message("settings.loggingPatterns.restoreDefaults")) {
                     area.text = CodeFocusSettingsState.DEFAULT_LOGGING_PATTERNS.joinToString("\n")
                 }
             }
-        val buttonRow =
-            JPanel().apply {
-                layout = BoxLayout(this, BoxLayout.LINE_AXIS)
-                border = JBUI.Borders.emptyTop(8)
-                add(restoreButton)
-            }
-
-        val panel =
-            FormBuilder
-                .createFormBuilder()
-                .addComponent(description)
-                .addLabeledComponent(JBLabel(CodeFocusBundle.message("settings.loggingPatterns.label")), scroll, 1, true)
-                .addComponent(buttonRow)
-                .addComponentFillVertically(JPanel(), 0)
-                .panel
-        val dialog =
-            DialogPanel().apply {
-                layout = BoxLayout(this, BoxLayout.PAGE_AXIS)
-                border = JBUI.Borders.empty(10)
-                add(panel)
-            }
-        rootPanel = dialog
-        return dialog
+        }
     }
 
     override fun isModified(): Boolean {
@@ -100,7 +77,6 @@ class CodeFocusConfigurable(
 
     override fun disposeUIResources() {
         patternsArea = null
-        rootPanel = null
     }
 
     private fun currentPatternsAsText(): String =
