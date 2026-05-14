@@ -76,9 +76,11 @@ class ShowLoggingLinesTogglePsiTest : BasePlatformTestCase() {
                 PyExpressionStatement::class.java,
             )
 
+        // Simplified rule: only lines containing "logger" or "Logger" are matched.
+        // `import logging` is intentionally NOT in this list — the bare `import logging`
+        // statement contains no "Logger" token and is skipped under the new default.
         val expectedMatches =
             listOf(
-                "import logging",
                 "from logging import getLogger",
                 "logger = logging.getLogger(__name__)",
                 "local_logger = getLogger(\"Test\")",
@@ -148,7 +150,6 @@ class ShowLoggingLinesTogglePsiTest : BasePlatformTestCase() {
                 }
         val expectedFoldedSnippets =
             listOf(
-                "import logging",
                 "from logging import getLogger",
                 "logger = logging.getLogger(__name__)",
                 "local_logger = getLogger(\"Test\")",

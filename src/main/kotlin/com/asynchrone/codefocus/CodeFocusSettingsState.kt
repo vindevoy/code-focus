@@ -73,14 +73,7 @@ class CodeFocusSettingsState : PersistentStateComponent<CodeFocusSettingsState.S
          * Configurable's "Restore defaults" button.
          */
         val DEFAULT_LOGGING_PATTERNS: List<String> =
-            listOf(
-                """^\s*import\s+logging\b""",
-                """^\s*from\s+logging\b""",
-                """^\s*from\s+\S+\s+import\s+[^#\n]*\b\w*[Ll]ogger\w*\b""",
-                """^\s*import\s+[^#\n]*\b\w*[Ll]ogger\w*\b""",
-                """^\s*(?:\w+\.)*\w*[Ll]ogger\w*\s*=""",
-                """^\s*(?:\w+\.)*\w*[Ll]ogger\w*\.\w+\(""",
-            )
+            listOf("""[Ll]ogger""")
 
         fun getInstance(project: Project): CodeFocusSettingsState = project.getService(CodeFocusSettingsState::class.java)
     }

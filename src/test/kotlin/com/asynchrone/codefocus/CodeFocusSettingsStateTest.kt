@@ -7,11 +7,10 @@ import org.junit.jupiter.api.Test
 
 class CodeFocusSettingsStateTest {
     @Test
-    fun `default logging patterns include the canonical six rules`() {
+    fun `default logging patterns are a single permissive rule matching any logger or Logger substring`() {
         val patterns = CodeFocusSettingsState.DEFAULT_LOGGING_PATTERNS
-        assertEquals(6, patterns.size, "Expected the six original rules from ShowLoggingLinesToggle")
-        assertTrue(patterns.any { it.contains("import\\s+logging") }, "Expected an `import logging` rule")
-        assertTrue(patterns.any { it.contains("[Ll]ogger") }, "Expected at least one logger-symbol rule")
+        assertEquals(1, patterns.size, "Expected a single simple rule")
+        assertTrue(patterns.any { it.contains("[Ll]ogger") }, "Expected the rule to mention [Ll]ogger")
     }
 
     @Test
@@ -122,17 +121,26 @@ class CodeFocusSettingsStateTest {
     }
 
     @Test
-    fun `default patterns match logging imports`() {
+    fun `default pattern matches imports that mention Logger directly`() {
         val regexes = CodeFocusSettingsState.DEFAULT_LOGGING_PATTERNS.map { Regex(it) }
         val samples =
             listOf(
-                """import logging""",
                 """from logging import getLogger""",
                 """from foo.bar import Logger""",
                 """from foo import my_logger""",
             )
         for (s in samples) {
-            assertTrue(regexes.any { it.containsMatchIn(s) }, "Expected at least one default pattern to match `$s`")
+            assertTrue(regexes.any { it.containsMatchIn(s) }, "Expected default pattern to match `$s`")
         }
+    }
+
+    @Test
+    fun `default pattern intentionally ignores import logging since the line has no Logger token`() {
+        val regexes = CodeFocusSettingsState.DEFAULT_LOGGING_PATTERNS.map { Regex(it) }
+        // Per the simplified rule, only lines containing "logger" or "Logger" are folded.
+        // `import logging` and `from logging import LogLevel` do not match. Document this so the
+        // behaviour is intentional, not regression.
+        assertFalse(regexes.any { it.containsMatchIn("import logging") })
+        assertFalse(regexes.any { it.containsMatchIn("from logging import LogLevel") })
     }
 }
