@@ -7,15 +7,31 @@
 
 ### Claude Code permissions
 
-The project's allow list lives in **`.claude/settings.json`** and is committed to the repo so it travels across machines. It pre-approves the commands Claude needs to drive this project — Gradle tasks, `git`, `glab`, `python3 …`, common read-only shell utilities, the IDE-bundled JBRs, and reads under the project, `~/.gradle`, `~/.claude`, `~/.config`, and `~/.local/share/JetBrains`.
+The project's allow list is split between two files:
+
+- **`.claude/settings.json`** — committed, project-wide. Contains entries that apply to **anyone working on this project**: verb-only prefixes for tools the project uses (`git *`, `glab *`, `python3 *`, `uv *`, `./gradlew *`, etc.), read-only shell utilities, env probes, and `/tmp` scratch ops. No path under `/home/<someone>` belongs here — it would only work on that one person's machine.
+- **`.claude/settings.local.json`** — gitignored, per-person. Holds anything that is genuinely machine-specific: absolute `Read` / `Edit` paths under the user's home, the user's IDE Toolbox JBR binary location, and any individual experimentation. Never put a project-wide rule here, or other contributors won't have it.
 
 If Claude needs a new command shape that isn't covered:
 
-1. Prefer the **broadest sensible prefix** (e.g. `Bash(python3 *)`, not one entry per script). This is the whole point of committing the file — a narrow allow that has to be re-typed on every variation defeats the goal.
-2. Add the entry to `.claude/settings.json` (committed, shared across machines), **not** `.claude/settings.local.json` (per-machine, gitignored). Only use the local file for genuinely machine-specific paths or sensitive entries.
-3. Avoid broad allows for destructive verbs that this project doesn't need (`rm -rf`, `sudo *`, network fetchers like `curl */wget *`). Keep those prompted.
+1. Prefer the **broadest sensible prefix** (`Bash(git *)`, not `Bash(git status*)` + `Bash(git diff*)` + …). The whole point of committing the project list is that we don't re-type a new entry every time the verb gets a different sub-command. Verb-level allows are the default; only narrow when the verb genuinely contains an unsafe sub-command we want to keep prompting (see "Security risks" below).
+2. Decide the right file: project-wide → `settings.json`, machine-specific → `settings.local.json`. When in doubt, project-wide unless the entry literally references a path under `/home/<user>`.
+3. JSON has no comments — keep both files lean and readable, and document the **why** behind any non-obvious entry in this CLAUDE.md section instead of in the JSON itself.
 
-`.gitignore` is set up so only `.claude/settings.json` is tracked; all other files under `.claude/` (including `settings.local.json` and any runtime state) stay local.
+**Security risks — do NOT broadly allow.** Each of these would let Claude do something destructive or smuggle in untrusted code; they stay prompted on every invocation, which is the design.
+
+| Pattern                                  | Why it's risky                                                                                              |
+|------------------------------------------|-------------------------------------------------------------------------------------------------------------|
+| `Bash(rm *)` or `Bash(rm -rf *)`         | Deletes anything. Allowed only inside `/tmp` (`Bash(rm /tmp/*)`).                                            |
+| `Bash(sudo *)`                           | System-wide modification with elevated privileges. Always confirm.                                          |
+| `Bash(curl *)` / `Bash(wget *)`          | Network fetchers — can pull untrusted code or exfiltrate secrets (e.g. tokens). Use `glab api` for GitLab. |
+| `Bash(bash -c *)` / `Bash(sh -c *)`      | Arbitrary code through a quoted command — defeats prefix matching entirely.                                 |
+| `Bash(eval *)` / `Bash(exec *)`          | Same problem as `bash -c`.                                                                                  |
+| Any pattern with `*` as the **whole** value | Universal allow — never useful, always dangerous.                                                       |
+
+Note that even with the broad allows below (`git *`, `uv *`, etc.), Claude Code's **safety hooks** still surface a separate prompt for things like `git push --force` to a protected branch, `git reset --hard`, simple-expansion arguments, etc. Allowing the verb does not bypass the safety check on a destructive flag — that is intentional layering.
+
+**`.gitignore` is set up so only `.claude/settings.json` is tracked**; all other files under `.claude/` (including `settings.local.json` and any runtime state) stay local.
 
 **Editing `.claude/settings.json` itself prompts by design.** The dialog reads "Yes / Yes, and allow Claude to edit its own settings for this session / No". Even with `Edit(//.../code-focus/**)` and `Edit(//.../code-focus/.claude/**)` in the allow list, Claude Code surfaces a separate self-config-edit prompt to keep allowlist mutations explicit. There is no `.claude/settings.json` entry that suppresses it (by design — the prompt protects against silent self-elevation). When you know you'll be doing several allowlist additions in one session, pick option 2 ("Yes, and allow Claude to edit its own settings for this session") on the first prompt; subsequent edits within that session land without further prompts.
 
