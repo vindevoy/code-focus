@@ -131,6 +131,14 @@ uv tool install ruff
 
 Do **not** reach for `pip3 install --user`, `pipx install`, or `sudo apt-get install` to satisfy a missing tool. All three trip permission prompts, two of them touch system-wide state, and none of them are needed when `uv` is available. The tool-existence check before invoking is fine via `command -v <tool>` (also pre-approved); skip the install attempt entirely when the tool is already present.
 
+To install something into the **project venv** (e.g. adding a tool that the test fixture needs), do **not** prefix with `VIRTUAL_ENV=$PWD/.venv ...`. The `$PWD` there is a `$VAR` expansion in an argument and trips the "Contains simple expansion" prompt. Pass the interpreter explicitly instead:
+
+```sh
+uv pip install --python .venv/bin/python <package>
+```
+
+`uv` resolves the venv from the interpreter path; no env-var prefix needed, no expansion, no prompt. This is what `resources/python/setup-uv-env.fish` already does — re-running that script is the one-shot way to refresh the project venv from `requirements.txt`.
+
 
 ## Project Overview
 
