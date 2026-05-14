@@ -6,17 +6,22 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import java.io.File
 
 /**
- * Platform-level integration tests for [ShowCommentsToggle]. Boots an in-process
- * IntelliJ Platform with a real `Editor` + PSI + `FoldingModel`, loads the canonical
- * fixture at `resources/python/test.py`, flips the toggle, and asserts on what's
- * collapsed.
+ * Platform-level integration tests for [ShowCommentsToggle]. Two fixtures:
+ *  - `resources/python/test-comments.py` — focused, easy to audit.
+ *  - `resources/python/test.py` — real, comprehensive fixture.
  */
 @Suppress("ktlint:standard:function-naming")
 class ShowCommentsTogglePsiTest : BasePlatformTestCase() {
-    private val fixtureText: String = File("resources/python/test.py").readText()
+    private val focusedFixture: String = File("resources/python/test-comments.py").readText()
+    private val realFixture: String = File("resources/python/test.py").readText()
 
-    fun `test toggle off folds standalone comments and docstrings`() {
-        myFixture.configureByText("test.py", fixtureText)
+    private fun collapsedTexts(editor: Editor): List<String> =
+        editor.foldingModel.allFoldRegions
+            .filter { it.isValid && !it.isExpanded }
+            .map { editor.document.getText(TextRange(it.startOffset, it.endOffset)) }
+
+    fun `test focused fixture - toggle off folds every comment and docstring`() {
+        myFixture.configureByText("test-comments.py", focusedFixture)
         val toggle = ShowCommentsToggle(myFixture.editor)
         toggle.isOn = false
 
@@ -24,14 +29,17 @@ class ShowCommentsTogglePsiTest : BasePlatformTestCase() {
         val expectedSnippets =
             listOf(
                 "# Top-of-file standalone comment",
-                "# Standalone comment between imports",
-                "# Followed by a second one to form a 2-line group",
+                "# Second consecutive standalone comment",
+                "# inline comment after an import",
                 "# Standalone comment inside a function body",
-                "# Two consecutive standalone comments deep inside a function",
-                "# Trailing standalone comment at the very bottom of the file",
-                """Sample module exercising every comment / blank-line shape""",
-                """Fetch a URL and return the decoded JSON payload""",
-                """Build a human-readable summary""",
+                "# inline comment on an assignment",
+                "# First of three grouped comments inside a function",
+                "# Second grouped comment",
+                "# Third grouped comment, closes the trio",
+                "Module docstring on a single line",
+                "Single-line function docstring",
+                "Multi-line docstring",
+                "Second paragraph after a blank line",
             )
         for (snippet in expectedSnippets) {
             assertTrue(
@@ -42,15 +50,13 @@ class ShowCommentsTogglePsiTest : BasePlatformTestCase() {
         }
     }
 
-    fun `test toggle on after off restores all comment regions to expanded`() {
-        myFixture.configureByText("test.py", fixtureText)
+    fun `test focused fixture - toggle on after off restores all comment regions`() {
+        myFixture.configureByText("test-comments.py", focusedFixture)
         val toggle = ShowCommentsToggle(myFixture.editor)
         toggle.isOn = false
         toggle.isOn = true
 
         val stillCollapsed = collapsedTexts(myFixture.editor)
-        // Anything left collapsed must NOT be a comment or a docstring (could be
-        // a code-structure fold the IDE created and we never touched).
         for (text in stillCollapsed) {
             assertFalse(
                 "After toggle ON, no comment/docstring fold should remain collapsed. Found: `$text`",
@@ -59,8 +65,26 @@ class ShowCommentsTogglePsiTest : BasePlatformTestCase() {
         }
     }
 
-    private fun collapsedTexts(editor: Editor): List<String> =
-        editor.foldingModel.allFoldRegions
-            .filter { it.isValid && !it.isExpanded }
-            .map { editor.document.getText(TextRange(it.startOffset, it.endOffset)) }
+    fun `test real fixture - toggle off folds the standard comment shapes`() {
+        myFixture.configureByText("test.py", realFixture)
+        val toggle = ShowCommentsToggle(myFixture.editor)
+        toggle.isOn = false
+
+        val collapsed = collapsedTexts(myFixture.editor)
+        val expectedSnippets =
+            listOf(
+                "# Top-of-file standalone comment",
+                "# Two consecutive standalone comments deep inside a function",
+                "# Trailing standalone comment at the very bottom of the file",
+                "Sample module exercising every comment / blank-line shape",
+                "Fetch a URL and return the decoded JSON payload",
+            )
+        for (snippet in expectedSnippets) {
+            assertTrue(
+                "Expected a collapsed fold whose text contains `$snippet` (real fixture). " +
+                    "Got: ${collapsed.joinToString(" | ") { it.replace("\n", "\\n").take(120) }}",
+                collapsed.any { it.contains(snippet) },
+            )
+        }
+    }
 }

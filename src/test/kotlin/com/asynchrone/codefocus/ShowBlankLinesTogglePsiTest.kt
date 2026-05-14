@@ -8,12 +8,17 @@ import java.io.File
  * Platform-level integration tests for [ShowBlankLinesToggle]. The toggle folds
  * "decorative" blank-line runs and keeps the ones PEP 8 requires (two blank lines
  * around top-level `def` / `class`, two blank lines after the last import).
+ *
+ * Two fixtures:
+ *  - `resources/python/test-blank-lines.py` — focused, easy to audit.
+ *  - `resources/python/test.py` — real, comprehensive fixture.
  */
 @Suppress("ktlint:standard:function-naming")
 class ShowBlankLinesTogglePsiTest : BasePlatformTestCase() {
-    private val fixtureText: String = File("resources/python/test.py").readText()
+    private val focusedFixture: String = File("resources/python/test-blank-lines.py").readText()
+    private val realFixture: String = File("resources/python/test.py").readText()
 
-    /** All collapsed fold-region ranges as `(firstLine0, lastLine0)` 0-based pairs. */
+    /** Currently collapsed fold-region ranges as `(firstLine0, lastLine0)` pairs. */
     private fun collapsedLineRanges(): List<Pair<Int, Int>> {
         val document = myFixture.editor.document
         return myFixture.editor.foldingModel.allFoldRegions
@@ -27,66 +32,60 @@ class ShowBlankLinesTogglePsiTest : BasePlatformTestCase() {
 
     private fun anyFoldCovers(line: Int): Boolean = collapsedLineRanges().any { (s, e) -> line in s..e }
 
-    fun `test toggle off folds decorative blanks between top-level constants`() {
-        myFixture.configureByText("test.py", fixtureText)
+    fun `test focused fixture - decorative blank between top-level constants is folded`() {
+        myFixture.configureByText("test-blank-lines.py", focusedFixture)
         val toggle = ShowBlankLinesToggle(myFixture.editor)
         toggle.isOn = false
 
-        // The blank line between `DEFAULT_NAME = "code-focus"` (0-based line 23) and
-        // the standalone comment that precedes `TIMEOUT_SECONDS` (line 24 is the blank).
-        // Decorative — not adjacent to a def/class/import — so it must be folded.
+        // In test-blank-lines.py, the decorative blank between `MAX = 1` and the
+        // standalone comment that introduces `DEFAULT` sits at 0-based line 15.
         assertTrue(
-            "Expected the decorative blank at 0-based line 24 to be folded. " +
+            "Expected the decorative blank at 0-based line 15 to be folded. " +
                 "Collapsed ranges: ${collapsedLineRanges()}",
-            anyFoldCovers(24),
+            anyFoldCovers(15),
         )
     }
 
-    fun `test toggle off folds decorative blanks inside function bodies`() {
-        myFixture.configureByText("test.py", fixtureText)
+    fun `test focused fixture - in-function decorative blanks are folded`() {
+        myFixture.configureByText("test-blank-lines.py", focusedFixture)
         val toggle = ShowBlankLinesToggle(myFixture.editor)
         toggle.isOn = false
 
-        // Several decorative blanks inside `fetch` — between local statements, around
-        // the `try` / `except` block. PEP 8 doesn't protect these.
-        val expectedFoldedLines = listOf(47, 51, 57, 61)
-        for (line in expectedFoldedLines) {
+        // Two in-function blanks inside `fetch`: line 23 (between `a = 1` and the
+        // standalone comment) and line 26 (between `b = 2` and `return`).
+        for (line in listOf(23, 26)) {
             assertTrue(
-                "Expected an in-function decorative blank at 0-based line $line to be folded. " +
+                "Expected the in-function decorative blank at 0-based line $line to be folded. " +
                     "Collapsed ranges: ${collapsedLineRanges()}",
                 anyFoldCovers(line),
             )
         }
     }
 
-    fun `test toggle off keeps PEP 8 separator before top-level def fetch visible`() {
-        myFixture.configureByText("test.py", fixtureText)
+    fun `test focused fixture - PEP 8 separator before top-level def fetch is kept`() {
+        myFixture.configureByText("test-blank-lines.py", focusedFixture)
         val toggle = ShowBlankLinesToggle(myFixture.editor)
         toggle.isOn = false
 
-        // `def fetch(...)` sits at 0-based line 32 in the fixture. Lines 30 and 31
-        // are the two PEP 8 blank-line separators in front of it — must stay visible.
-        assertFalse(
-            "PEP 8 separator at 0-based line 30 must NOT be folded. " +
-                "Collapsed ranges: ${collapsedLineRanges()}",
-            anyFoldCovers(30),
-        )
-        assertFalse(
-            "PEP 8 separator at 0-based line 31 must NOT be folded. " +
-                "Collapsed ranges: ${collapsedLineRanges()}",
-            anyFoldCovers(31),
-        )
+        // `def fetch(...)` sits at 0-based line 20. Lines 18 and 19 are the two
+        // PEP 8 blank-line separators in front of it — must stay visible.
+        for (line in 18..19) {
+            assertFalse(
+                "PEP 8 separator at 0-based line $line must NOT be folded. " +
+                    "Collapsed ranges: ${collapsedLineRanges()}",
+                anyFoldCovers(line),
+            )
+        }
     }
 
-    fun `test toggle off keeps PEP 8 separator after the import block visible`() {
-        myFixture.configureByText("test.py", fixtureText)
+    fun `test focused fixture - PEP 8 separator after the import block is kept`() {
+        myFixture.configureByText("test-blank-lines.py", focusedFixture)
         val toggle = ShowBlankLinesToggle(myFixture.editor)
         toggle.isOn = false
 
-        // The two blank lines after the LAST top-level import (`import math` on
-        // 0-based line 18) sit at lines 19 and 20 — they're the PEP 8 separator after
-        // the import block and must stay visible.
-        for (line in 19..20) {
+        // The two blank lines after the LAST top-level import (`import sys` on line 10)
+        // sit at 0-based lines 11 and 12 — protected by the after-imports rule.
+        for (line in 11..12) {
             assertFalse(
                 "PEP 8 separator at 0-based line $line (after the import block) must NOT be folded. " +
                     "Collapsed ranges: ${collapsedLineRanges()}",
@@ -95,8 +94,8 @@ class ShowBlankLinesTogglePsiTest : BasePlatformTestCase() {
         }
     }
 
-    fun `test toggle on after off removes our blank-line folds`() {
-        myFixture.configureByText("test.py", fixtureText)
+    fun `test focused fixture - toggle on after off removes blank-line folds`() {
+        myFixture.configureByText("test-blank-lines.py", focusedFixture)
         val toggle = ShowBlankLinesToggle(myFixture.editor)
         toggle.isOn = false
         val collapsedAfterOff =
@@ -105,17 +104,49 @@ class ShowBlankLinesTogglePsiTest : BasePlatformTestCase() {
         assertTrue("Expected at least one collapsed blank-line fold after OFF", collapsedAfterOff > 0)
 
         toggle.isOn = true
-        val collapsedAfterOn =
+        val collapsedTexts =
             myFixture.editor.foldingModel.allFoldRegions
                 .filter { it.isValid && !it.isExpanded }
                 .map { fold ->
                     myFixture.editor.document.getText(TextRange(fold.startOffset, fold.endOffset))
                 }
-        // After re-enabling, no purely-blank region should remain collapsed.
-        for (text in collapsedAfterOn) {
+        for (text in collapsedTexts) {
             assertFalse(
                 "After toggle ON, no blank-only region should still be collapsed. Got: `${text.replace("\n", "\\n")}`",
                 text.all { it.isWhitespace() },
+            )
+        }
+    }
+
+    fun `test real fixture - decorative blanks fold and PEP 8 separators are kept`() {
+        myFixture.configureByText("test.py", realFixture)
+        val toggle = ShowBlankLinesToggle(myFixture.editor)
+        toggle.isOn = false
+
+        // In test.py: line 24 is the decorative blank between top-level constants
+        // `DEFAULT_NAME` and the comment block introducing `TIMEOUT_SECONDS`.
+        assertTrue(
+            "Expected decorative blank at 0-based line 24 in test.py to be folded. " +
+                "Collapsed ranges: ${collapsedLineRanges()}",
+            anyFoldCovers(24),
+        )
+
+        // In test.py: lines 30-31 are the PEP 8 separator before `def fetch` (line 32).
+        for (line in 30..31) {
+            assertFalse(
+                "PEP 8 separator at 0-based line $line in test.py must NOT be folded. " +
+                    "Collapsed ranges: ${collapsedLineRanges()}",
+                anyFoldCovers(line),
+            )
+        }
+
+        // In test.py: lines 19-20 are the PEP 8 separator after the last import
+        // (`import math` on line 18).
+        for (line in 19..20) {
+            assertFalse(
+                "PEP 8 separator at 0-based line $line in test.py must NOT be folded. " +
+                    "Collapsed ranges: ${collapsedLineRanges()}",
+                anyFoldCovers(line),
             )
         }
     }

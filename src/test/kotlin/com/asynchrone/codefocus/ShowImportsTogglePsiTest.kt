@@ -5,35 +5,47 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import java.io.File
 
 /**
- * Platform-level integration tests for [ShowImportsToggle]. Verifies the top-level
- * import group and the nested `from logging import getLogger` inside `def fetch`
- * collapse when the pill is OFF.
+ * Platform-level integration tests for [ShowImportsToggle]. Two fixtures:
+ *  - `resources/python/test-imports.py` — focused, easy to audit.
+ *  - `resources/python/test.py` — real, comprehensive fixture.
  */
 @Suppress("ktlint:standard:function-naming")
 class ShowImportsTogglePsiTest : BasePlatformTestCase() {
-    private val fixtureText: String = File("resources/python/test.py").readText()
+    private val focusedFixture: String = File("resources/python/test-imports.py").readText()
+    private val realFixture: String = File("resources/python/test.py").readText()
 
-    fun `test toggle off folds the top-level import group and inline imports`() {
-        myFixture.configureByText("test.py", fixtureText)
+    private fun collapsedTexts(): List<String> =
+        myFixture.editor.foldingModel.allFoldRegions
+            .filter { it.isValid && !it.isExpanded }
+            .map { myFixture.editor.document.getText(TextRange(it.startOffset, it.endOffset)) }
+
+    fun `test focused fixture - toggle off folds the top-level import group`() {
+        myFixture.configureByText("test-imports.py", focusedFixture)
         val toggle = ShowImportsToggle(myFixture.editor)
         toggle.isOn = false
 
         val collapsed = collapsedTexts()
-
         assertTrue(
-            "Expected the top-level import group to be inside a collapsed fold. " +
+            "Expected the top-level import group (import json/os/sys + from collections / dataclasses / pathlib) to be collapsed. " +
                 "Got: ${collapsed.joinToString(" | ") { it.replace("\n", "\\n").take(140) }}",
             collapsed.any { it.contains("import json") && it.contains("from pathlib import Path") },
         )
+    }
 
+    fun `test focused fixture - toggle off folds the inline import inside fetch`() {
+        myFixture.configureByText("test-imports.py", focusedFixture)
+        val toggle = ShowImportsToggle(myFixture.editor)
+        toggle.isOn = false
+
+        val collapsed = collapsedTexts()
         assertTrue(
-            "Expected the inline `from logging import getLogger` (inside `def fetch`) to be in a collapsed fold.",
+            "Expected the inline `from logging import getLogger` to be in a collapsed fold.",
             collapsed.any { it.contains("from logging import getLogger") },
         )
     }
 
-    fun `test toggle on after off restores import folds`() {
-        myFixture.configureByText("test.py", fixtureText)
+    fun `test focused fixture - toggle on after off restores import folds`() {
+        myFixture.configureByText("test-imports.py", focusedFixture)
         val toggle = ShowImportsToggle(myFixture.editor)
         toggle.isOn = false
         toggle.isOn = true
@@ -48,8 +60,20 @@ class ShowImportsTogglePsiTest : BasePlatformTestCase() {
         )
     }
 
-    private fun collapsedTexts(): List<String> =
-        myFixture.editor.foldingModel.allFoldRegions
-            .filter { it.isValid && !it.isExpanded }
-            .map { myFixture.editor.document.getText(TextRange(it.startOffset, it.endOffset)) }
+    fun `test real fixture - toggle off folds top-level group plus inline import`() {
+        myFixture.configureByText("test.py", realFixture)
+        val toggle = ShowImportsToggle(myFixture.editor)
+        toggle.isOn = false
+
+        val collapsed = collapsedTexts()
+        assertTrue(
+            "Expected the top-level import group of test.py to be collapsed. " +
+                "Got: ${collapsed.joinToString(" | ") { it.replace("\n", "\\n").take(140) }}",
+            collapsed.any { it.contains("import json") && it.contains("import math") },
+        )
+        assertTrue(
+            "Expected the inline `from logging import getLogger` of test.py to be collapsed.",
+            collapsed.any { it.contains("from logging import getLogger") },
+        )
+    }
 }
