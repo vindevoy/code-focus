@@ -38,7 +38,7 @@ class ReApplyButton(
         toolTipText = CodeFocusBundle.message("button.reApply.tooltip")
         label.border = JBUI.Borders.empty(4, 10)
         label.foreground = JBColor.foreground()
-        label.font = JBFont.label()
+        label.font = JBFont.small()
         add(BackgroundPill(label))
 
         val click =

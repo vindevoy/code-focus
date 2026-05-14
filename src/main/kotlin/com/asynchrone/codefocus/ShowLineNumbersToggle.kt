@@ -47,7 +47,7 @@ class ShowLineNumbersToggle(
         isOpaque = false
         border = JBUI.Borders.empty(1, 2)
         cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
-        label.font = JBFont.label()
+        label.font = JBFont.small()
         add(label)
         add(pill)
 
