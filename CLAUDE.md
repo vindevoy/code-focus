@@ -227,11 +227,12 @@ Notes go on the issue itself (top-level note or threaded reply inside an existin
 
 ### Issue state labels
 
-The project uses three GitLab labels as a state machine between the user and Claude. They are the unambiguous, glanceable signal of "whose turn is it" — preferred over scrolling the CLI for the most recent message. The labels exist on the project already; never invent new variants.
+The project uses four GitLab labels as a state machine between the user and Claude. They are the unambiguous, glanceable signal of "whose turn is it" — preferred over scrolling the CLI for the most recent message. The labels exist on the project already; never invent new variants.
 
 - **`Waiting`** — Claude is waiting for the user. Claude **adds** this whenever it has just posted a status note that needs a human reply (work ready for review, follow-up on a remark, anything that ends with "your turn"). The user **removes** it when they respond with a new comment, mark a discussion resolved, or otherwise re-engage. Until the label is gone, Claude should not assume new feedback exists — re-poll, but don't push speculative changes.
 - **`Merge`** — The user is signalling that no remarks are open and Claude should now create the merge request. Claude treats this label as equivalent to the verbal "mr" / "make MR" order (either path is valid). On detecting `Merge`, Claude opens the MR and then **removes `Merge`** in the same step.
 - **`Merge Request`** — Claude **adds** this immediately after creating the MR. The user takes it from there: review, approve, merge. **Claude never performs the merge itself** — only creates the MR.
+- **`On Hold`** — The user has parked the issue. **Claude must not work on it** until the label is removed: no new branch, no commits to an existing branch, no MR. When picking the next issue from the queue (especially in AFK mode), skip any issue carrying `On Hold`. If an issue Claude is mid-flight on gets `On Hold` added, finish the current commit + push if already in progress, post a status note acknowledging the hold, and stop — the branch stays where it is for later resumption.
 
 Setting / removing a label via glab:
 
@@ -299,6 +300,28 @@ Two rules whenever Claude moves between branches:
    `git branch -d` (lowercase) refuses to delete an unmerged branch — that's the safety we want. If multiple merged branches piled up across rounds, run `git branch --merged develop | grep -v develop` to find them and delete them in one batch.
 
 The two rules compose for the common path "merged X, now start on Y": cleanup after X, then `git checkout Y && git rebase develop` even if Y already exists.
+
+### Milestone scope: only work on the active milestone
+
+The project ships in milestones. **Claude works only on issues assigned to the currently active (open, not closed) milestone.** Future-milestone issues — even when they look small or self-contained — are out of scope until the active milestone closes.
+
+When picking work from the queue (especially in AFK mode):
+
+1. List the active milestones (`glab api projects/.../milestones`); usually exactly one is `state=active`.
+2. Filter open issues to those whose `milestone.title` matches the active one.
+3. Skip everything else.
+
+If no milestone is active (rare — between releases), do nothing autonomously and ask before starting work.
+
+### Working modes: live vs AFK
+
+The user has two explicit modes, and Claude's freedom to act differs between them.
+
+- **Live mode** (default). The user is at the keyboard, possibly running `./gradlew runIde` against whichever branch is currently checked out. Claude **must not switch branches** without an explicit instruction — flipping the working tree out from under a `runIde` session swaps the code the user is actively testing. Claude also waits for commands rather than running ahead through the issue queue: do the requested step, post the note, and wait. Phrasings that put Claude in live mode include "I'm back", "I'm testing X", "I'm working", or just resuming after a quiet stretch.
+
+- **AFK mode**. The user has explicitly announced they're leaving — "I'm off for a couple of hours", "going to bed", "AFK", or equivalent. While AFK, Claude is free to: switch branches at will (still per the rebase + cleanup rules above), pick the next open issue from the queue without waiting for a per-issue command, and chain feature / bugfix work end-to-end. The queue is the **active-milestone** open issues (see [Milestone scope](#milestone-scope-only-work-on-the-active-milestone)) **minus anything carrying `On Hold` or already in `Waiting`**. When the queue empties (every active-milestone issue is `Waiting`, `On Hold`, or otherwise blocked on the user), stop and sleep — re-poll occasionally but don't spin work for its own sake.
+
+The mode flips back to live the moment the user sends any message after returning. Until then, treat unknown state as live (the safer default).
 
 ### Workflow for each issue
 
