@@ -7,10 +7,10 @@ import org.junit.jupiter.api.Test
 
 class CodeFocusSettingsStateTest {
     @Test
-    fun `default logging patterns are a single permissive rule matching any logger or Logger substring`() {
+    fun `default logging patterns are a single rule matching the literal substring 'logger dot'`() {
         val patterns = CodeFocusSettingsState.DEFAULT_LOGGING_PATTERNS
         assertEquals(1, patterns.size, "Expected a single simple rule")
-        assertTrue(patterns.any { it.contains("[Ll]ogger") }, "Expected the rule to mention [Ll]ogger")
+        assertEquals("""logger\.""", patterns.single(), "Expected the rule to be `logger\\.`")
     }
 
     @Test
@@ -106,41 +106,22 @@ class CodeFocusSettingsStateTest {
     }
 
     @Test
-    fun `default patterns match logger assignments with and without prefixes`() {
+    fun `default pattern intentionally ignores lines without the literal 'logger dot' substring`() {
         val regexes = CodeFocusSettingsState.DEFAULT_LOGGING_PATTERNS.map { Regex(it) }
-        val samples =
-            listOf(
-                """logger = logging.getLogger(__name__)""",
-                """    logger = logging.getLogger(__name__)""",
-                """self.logger = logging.getLogger("X")""",
-                """    self._logger = logging.getLogger(__name__)""",
-            )
-        for (s in samples) {
-            assertTrue(regexes.any { it.containsMatchIn(s) }, "Expected at least one default pattern to match `$s`")
-        }
-    }
-
-    @Test
-    fun `default pattern matches imports that mention Logger directly`() {
-        val regexes = CodeFocusSettingsState.DEFAULT_LOGGING_PATTERNS.map { Regex(it) }
-        val samples =
-            listOf(
-                """from logging import getLogger""",
-                """from foo.bar import Logger""",
-                """from foo import my_logger""",
-            )
-        for (s in samples) {
-            assertTrue(regexes.any { it.containsMatchIn(s) }, "Expected default pattern to match `$s`")
-        }
-    }
-
-    @Test
-    fun `default pattern intentionally ignores import logging since the line has no Logger token`() {
-        val regexes = CodeFocusSettingsState.DEFAULT_LOGGING_PATTERNS.map { Regex(it) }
-        // Per the simplified rule, only lines containing "logger" or "Logger" are folded.
-        // `import logging` and `from logging import LogLevel` do not match. Document this so the
-        // behaviour is intentional, not regression.
+        // Per the simplified rule, only lines containing the literal `logger.` (lowercase
+        // logger followed by a dot) are folded. That intentionally targets logger method
+        // calls (`logger.warning(...)`, `self.logger.info(...)`, `_logger.debug(...)`),
+        // and intentionally leaves alone:
+        //   - assignments like `logger = logging.getLogger(...)` (logger followed by space)
+        //   - imports like `from foo import my_logger` (no dot after logger)
+        //   - `import logging` (no logger token at all)
+        //   - capital-L `Logger` class references
         assertFalse(regexes.any { it.containsMatchIn("import logging") })
         assertFalse(regexes.any { it.containsMatchIn("from logging import LogLevel") })
+        assertFalse(regexes.any { it.containsMatchIn("from logging import getLogger") })
+        assertFalse(regexes.any { it.containsMatchIn("from foo import my_logger") })
+        assertFalse(regexes.any { it.containsMatchIn("from foo.bar import Logger") })
+        assertFalse(regexes.any { it.containsMatchIn("logger = logging.getLogger(__name__)") })
+        assertFalse(regexes.any { it.containsMatchIn("""self.logger = logging.getLogger("X")""") })
     }
 }
