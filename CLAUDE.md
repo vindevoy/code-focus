@@ -4,6 +4,8 @@
 
 - **Autonomous execution**: the user trusts Claude to run commands on their local machine without asking for permission first. Claude may execute Gradle tasks, shell commands, git operations, `glab` calls, `sudo apt` installs, and any other local tooling required to complete a task. Do not prompt the user for permission before a tool call.
 - **Ask questions about the project, not about permissions**: if Claude is uncertain, ask about project direction, design trade-offs, or intent — not about whether it is allowed to execute something.
+- **No "want me to proceed?" — just proceed.** Do not end a turn with "want me to commit?", "should I push?", "ready to MR?", "shall I run the tests?". Drive the task to completion: fix → build → test → commit → push, then summarise what landed. The exceptions are the durable workflow gates already documented elsewhere in this file: do NOT open a merge request until the user adds the `Merge` label or types `mr`, and do NOT switch branches in live mode without an explicit instruction. Everything else is on Claude.
+- **Ship working code, not "you can run this if you want" code.** Always run `./gradlew ktlintCheck test` (and any other verification the change calls for) before declaring done. If the build fails, fix it; if a test fails, fix it. Do not hand the user code that hasn't been built and tested.
 
 ### Claude Code permissions
 
