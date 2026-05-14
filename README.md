@@ -26,11 +26,24 @@ Code Focus hides the comments and logging lines from Python code (`.py` files) i
 
 ## Installation
 
-Until the plugin is published on the JetBrains Marketplace, install it manually from a locally built zip:
+The plugin is not yet published on the JetBrains Marketplace, but a pre-built distributable zip is attached to every release.
 
-1. Run `./gradlew buildPlugin` — the distributable is produced in `build/distributions/`.
-2. In PyCharm: `Settings` → `Plugins` → gear icon → `Install Plugin from Disk…` → pick the zip.
-3. Restart the IDE.
+1. Download the latest `code-focus-<version>.zip` from one of:
+   - **GitHub Releases**: https://github.com/vindevoy/code-focus/releases/latest
+   - **GitLab Releases**: https://gitlab.com/asynchrone/kotlin/code-focus/-/releases/permalink/latest
+2. Open PyCharm (Community or Professional).
+3. Go to `Settings` → `Plugins` → gear icon (top right of the dialog) → `Install Plugin from Disk…`.
+4. Select the downloaded `code-focus-<version>.zip`.
+5. Restart PyCharm when prompted.
+
+After the restart, open any `.py` file — the **Code Focus** toggle bar appears above the editor, and **Settings → Tools → Code Focus** exposes the configurable substring list used by the *Show Logging Lines* toggle.
+
+### Building from source
+
+If you would rather build the zip yourself instead of downloading a release:
+
+1. Run `./gradlew buildPlugin` — the distributable is produced in `build/distributions/code-focus-<version>.zip`.
+2. Follow steps 2–5 above with the freshly built zip.
 
 
 ## Build & run
