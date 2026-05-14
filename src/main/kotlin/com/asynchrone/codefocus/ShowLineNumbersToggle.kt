@@ -29,8 +29,7 @@ import javax.swing.JPanel
 class ShowLineNumbersToggle(
     private val editor: Editor? = null,
 ) : JPanel(FlowLayout(FlowLayout.RIGHT, JBUI.scale(6), JBUI.scale(1))) {
-    private val labelFont = JBFont.small()
-    private val pill = Pill(labelFont)
+    private val pill = Pill()
     private val label = JLabel(CodeFocusBundle.message("toggle.showLineNumbers.label"))
 
     var isOn: Boolean
@@ -48,7 +47,7 @@ class ShowLineNumbersToggle(
         isOpaque = false
         border = JBUI.Borders.empty(1, 2)
         cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
-        label.font = labelFont
+        label.font = JBFont.small()
         add(label)
         add(pill)
 
@@ -101,29 +100,11 @@ class ShowLineNumbersToggle(
         ed.component.repaint()
     }
 
-    private class Pill(
-        font: java.awt.Font,
-    ) : JComponent() {
+    private class Pill : JComponent() {
         var isOn: Boolean = true
 
-        private val capHeight: Int
-        private val xHeight: Int
-
         init {
-            val frc = java.awt.font.FontRenderContext(null, true, true)
-            capHeight =
-                java.awt.font
-                    .TextLayout("H", font, frc)
-                    .bounds.height
-                    .toInt()
-                    .coerceAtLeast(2)
-            xHeight =
-                java.awt.font
-                    .TextLayout("x", font, frc)
-                    .bounds.height
-                    .toInt()
-                    .coerceAtLeast(2)
-            val size = Dimension(capHeight * 2, capHeight)
+            val size = Dimension(JBUI.scale(24), JBUI.scale(12))
             preferredSize = size
             minimumSize = size
             maximumSize = size
@@ -134,13 +115,15 @@ class ShowLineNumbersToggle(
             val g2 = g.create() as Graphics2D
             try {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
+                val arc = JBUI.scale(2)
                 g2.color = if (isOn) ON_COLOR else OFF_COLOR
-                g2.fillRoundRect(0, 0, width - 1, height - 1, capHeight, capHeight)
-                val knobInset = (capHeight - xHeight) / 2
-                val knobX = if (isOn) width - xHeight - knobInset else knobInset
-                val knobY = (height - xHeight) / 2
+                g2.fillRoundRect(0, 0, width - 1, height - 1, arc, arc)
+                val knob = JBUI.scale(8)
+                val knobInset = (height - knob) / 2
+                val knobX = if (isOn) width - knob - knobInset else knobInset
+                val knobY = (height - knob) / 2
                 g2.color = JBColor.foreground()
-                g2.fillRoundRect(knobX, knobY, xHeight, xHeight, xHeight, xHeight)
+                g2.fillRoundRect(knobX, knobY, knob, knob, arc, arc)
             } finally {
                 g2.dispose()
             }
