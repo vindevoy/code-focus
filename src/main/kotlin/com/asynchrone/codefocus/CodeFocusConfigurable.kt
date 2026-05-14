@@ -3,6 +3,7 @@ package com.asynchrone.codefocus
 import com.intellij.openapi.options.Configurable
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogPanel
+import com.intellij.ui.EditorNotifications
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTextArea
@@ -35,6 +36,8 @@ class CodeFocusConfigurable(
         val area =
             JBTextArea(8, 60).apply {
                 font = JBUI.Fonts.create("Monospaced", JBUI.Fonts.label().size)
+                lineWrap = true
+                wrapStyleWord = false
                 text = currentPatternsAsText()
             }
         patternsArea = area
@@ -43,6 +46,7 @@ class CodeFocusConfigurable(
         val description =
             JBLabel(CodeFocusBundle.message("settings.loggingPatterns.description")).apply {
                 border = JBUI.Borders.emptyBottom(8)
+                setAllowAutoWrapping(true)
             }
 
         val restoreButton =
@@ -84,6 +88,7 @@ class CodeFocusConfigurable(
     override fun apply() {
         val area = patternsArea ?: return
         CodeFocusSettingsState.getInstance(project).loggingPatterns = area.text.toPatternList()
+        EditorNotifications.getInstance(project).updateAllNotifications()
     }
 
     override fun reset() {
