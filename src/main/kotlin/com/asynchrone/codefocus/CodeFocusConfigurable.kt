@@ -14,9 +14,9 @@ import javax.swing.ScrollPaneConstants
 /**
  * Project Settings → Tools → Code Focus.
  *
- * Today exposes one setting: the regex patterns Show Logging Lines uses to
+ * Today exposes one setting: the substrings Show Logging Lines uses to
  * identify lines as "logging-related". Each line in the text area is one
- * pattern; blank lines are ignored. The "Restore defaults" button rewrites
+ * substring; blank lines are ignored. The "Restore defaults" button rewrites
  * the area with [CodeFocusSettingsState.DEFAULT_LOGGING_PATTERNS].
  *
  * Future settings live alongside in the same Configurable.
@@ -43,11 +43,11 @@ class CodeFocusConfigurable(
             }
         return panel {
             row {
-                comment(CodeFocusBundle.message("settings.loggingPatterns.description"))
+                text(CodeFocusBundle.message("settings.loggingPatterns.description"))
                     .align(AlignX.FILL)
                     .resizableColumn()
             }
-            row(CodeFocusBundle.message("settings.loggingPatterns.label")) {
+            row {
                 cell(scroll)
                     .align(Align.FILL)
                     .resizableColumn()
