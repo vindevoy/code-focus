@@ -7,18 +7,9 @@ import org.junit.jupiter.api.Test
 
 class CodeFocusSettingsStateTest {
     @Test
-    fun `default logging patterns are a single rule matching the literal substring 'logger dot'`() {
+    fun `default logging patterns are three plain substrings (logger, Logger, logging)`() {
         val patterns = CodeFocusSettingsState.DEFAULT_LOGGING_PATTERNS
-        assertEquals(1, patterns.size, "Expected a single simple rule")
-        assertEquals("""logger\.""", patterns.single(), "Expected the rule to be `logger\\.`")
-    }
-
-    @Test
-    fun `default patterns compile as valid regexes`() {
-        for (p in CodeFocusSettingsState.DEFAULT_LOGGING_PATTERNS) {
-            // Throws PatternSyntaxException if invalid; the assertion is "we got here"
-            Regex(p)
-        }
+        assertEquals(listOf("logger", "Logger", "logging"), patterns)
     }
 
     @Test
@@ -31,7 +22,7 @@ class CodeFocusSettingsStateTest {
     @Test
     fun `state getter returns the user list when it is non-empty`() {
         val state = CodeFocusSettingsState()
-        val custom = listOf("""^foo\b""", """^bar\b""")
+        val custom = listOf("foo", "bar")
         state.loggingPatterns = custom
         assertEquals(custom, state.loggingPatterns)
         assertFalse(CodeFocusSettingsState.DEFAULT_LOGGING_PATTERNS == state.loggingPatterns)
@@ -43,9 +34,9 @@ class CodeFocusSettingsStateTest {
         var firedCount = 0
         val listener = CodeFocusSettingsState.PatternsListener { firedCount++ }
         state.addPatternsListener(listener)
-        state.loggingPatterns = listOf("""^foo\b""")
-        state.loggingPatterns = listOf("""^bar\b""")
-        state.loggingPatterns = listOf("""^foo\b""")
+        state.loggingPatterns = listOf("a")
+        state.loggingPatterns = listOf("b")
+        state.loggingPatterns = listOf("a")
         assertEquals(3, firedCount, "Listener must fire on every setter call, even when the value is unchanged")
     }
 
@@ -56,7 +47,7 @@ class CodeFocusSettingsStateTest {
         val listener = CodeFocusSettingsState.PatternsListener { firedCount++ }
         state.addPatternsListener(listener)
         state.removePatternsListener(listener)
-        state.loggingPatterns = listOf("""^foo\b""")
+        state.loggingPatterns = listOf("a")
         assertEquals(0, firedCount)
     }
 
@@ -67,61 +58,53 @@ class CodeFocusSettingsStateTest {
         state.addPatternsListener(CodeFocusSettingsState.PatternsListener { order += "a" })
         state.addPatternsListener(CodeFocusSettingsState.PatternsListener { order += "b" })
         state.addPatternsListener(CodeFocusSettingsState.PatternsListener { order += "c" })
-        state.loggingPatterns = listOf("""^foo\b""")
+        state.loggingPatterns = listOf("x")
         assertEquals(listOf("a", "b", "c"), order)
     }
 
     @Test
-    fun `default patterns match unprefixed logger calls with any leading whitespace`() {
-        val regexes = CodeFocusSettingsState.DEFAULT_LOGGING_PATTERNS.map { Regex(it) }
-        val samples =
+    fun `default substrings cover every common logger and logging shape`() {
+        val needles = CodeFocusSettingsState.DEFAULT_LOGGING_PATTERNS
+        val matchedSamples =
             listOf(
-                """logger.warning("x")""",
-                """    logger.warning("x")""",
-                "\tlogger.warning(\"x\")",
-                "\t\tlogger.warning(\"x\")",
-                """            logger.warning("x")""",
+                "import logging",
+                "from logging import getLogger",
+                "from logging import LogLevel",
+                "from foo import my_logger",
+                "from foo import logger",
+                "from foo.bar import Logger",
+                "logger = logging.getLogger(__name__)",
+                """self.logger = logging.getLogger("X")""",
+                "_logger = logging.getLogger(__name__)",
+                "logger.warning(\"x\")",
+                "    logger.warning(\"x\")",
+                "self.logger.warning(\"x\")",
+                "module.sub.logger.info(\"x\")",
+                "_logger.debug(\"x\")",
+                "my_logger.error(\"x\")",
+                "LoggerFactory.getLogger(__name__)",
             )
-        for (s in samples) {
-            assertTrue(regexes.any { it.containsMatchIn(s) }, "Expected at least one default pattern to match `$s`")
+        for (s in matchedSamples) {
+            assertTrue(needles.any { it.isNotEmpty() && s.contains(it) }, "Expected default substrings to match `$s`")
         }
     }
 
     @Test
-    fun `default patterns match prefixed logger calls (self, module, chained)`() {
-        val regexes = CodeFocusSettingsState.DEFAULT_LOGGING_PATTERNS.map { Regex(it) }
-        val samples =
+    fun `default substrings leave alone lines with no logging-related token`() {
+        val needles = CodeFocusSettingsState.DEFAULT_LOGGING_PATTERNS
+        val unrelatedSamples =
             listOf(
-                """self.logger.warning("x")""",
-                """    self.logger.warning("x")""",
-                "\t\tself.logger.warning(\"x\")",
-                """module.sub.logger.warning("x")""",
-                """self.my_logger.info("x")""",
-                """_logger.warning("x")""",
-                """my_logger.debug("x")""",
+                "x = 42",
+                "print(\"hello\")",
+                "from collections import defaultdict",
+                "def main(): pass",
+                "raise RuntimeError(\"boom\")",
             )
-        for (s in samples) {
-            assertTrue(regexes.any { it.containsMatchIn(s) }, "Expected at least one default pattern to match `$s`")
+        for (s in unrelatedSamples) {
+            assertFalse(
+                needles.any { it.isNotEmpty() && s.contains(it) },
+                "Expected default substrings NOT to match `$s`",
+            )
         }
-    }
-
-    @Test
-    fun `default pattern intentionally ignores lines without the literal 'logger dot' substring`() {
-        val regexes = CodeFocusSettingsState.DEFAULT_LOGGING_PATTERNS.map { Regex(it) }
-        // Per the simplified rule, only lines containing the literal `logger.` (lowercase
-        // logger followed by a dot) are folded. That intentionally targets logger method
-        // calls (`logger.warning(...)`, `self.logger.info(...)`, `_logger.debug(...)`),
-        // and intentionally leaves alone:
-        //   - assignments like `logger = logging.getLogger(...)` (logger followed by space)
-        //   - imports like `from foo import my_logger` (no dot after logger)
-        //   - `import logging` (no logger token at all)
-        //   - capital-L `Logger` class references
-        assertFalse(regexes.any { it.containsMatchIn("import logging") })
-        assertFalse(regexes.any { it.containsMatchIn("from logging import LogLevel") })
-        assertFalse(regexes.any { it.containsMatchIn("from logging import getLogger") })
-        assertFalse(regexes.any { it.containsMatchIn("from foo import my_logger") })
-        assertFalse(regexes.any { it.containsMatchIn("from foo.bar import Logger") })
-        assertFalse(regexes.any { it.containsMatchIn("logger = logging.getLogger(__name__)") })
-        assertFalse(regexes.any { it.containsMatchIn("""self.logger = logging.getLogger("X")""") })
     }
 }

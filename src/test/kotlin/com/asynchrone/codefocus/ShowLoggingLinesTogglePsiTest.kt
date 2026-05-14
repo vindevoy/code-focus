@@ -9,7 +9,7 @@ import com.jetbrains.python.psi.PyImportStatement
 
 /**
  * PSI-level verification that every logger-call in the test fixture is
- * actually reachable by `findChildrenOfAnyType` and that the default regex
+ * actually reachable by `findChildrenOfAnyType` and that the default substring
  * set matches the PSI element's `.text` for each one. This is what the
  * `Show Logging Lines` toggle iterates over at apply time, so a failure
  * here directly explains why a line doesn't fold.
@@ -48,10 +48,9 @@ class ShowLoggingLinesTogglePsiTest : BasePlatformTestCase() {
             return 0
         """.trimIndent()
 
-    private val patterns =
-        CodeFocusSettingsState.DEFAULT_LOGGING_PATTERNS.map { Regex(it) }
+    private val needles = CodeFocusSettingsState.DEFAULT_LOGGING_PATTERNS
 
-    private fun matches(text: String): Boolean = patterns.any { it.containsMatchIn(text) }
+    private fun matches(text: String): Boolean = needles.any { it.isNotEmpty() && text.contains(it) }
 
     fun `test psi finds the deeply nested logger warning statement`() {
         val psiFile = myFixture.configureByText("test.py", testFile)
@@ -65,7 +64,7 @@ class ShowLoggingLinesTogglePsiTest : BasePlatformTestCase() {
         assertNotNull("`logger.warning(...)` PyExpressionStatement must be reachable via findChildrenOfAnyType", warning)
     }
 
-    fun `test default patterns match every logger statement in the fixture`() {
+    fun `test default substrings match every logger and logging statement in the fixture`() {
         val psiFile = myFixture.configureByText("test.py", testFile)
         val allStatements =
             PsiTreeUtil.findChildrenOfAnyType(
@@ -76,12 +75,15 @@ class ShowLoggingLinesTogglePsiTest : BasePlatformTestCase() {
                 PyExpressionStatement::class.java,
             )
 
-        // Simplified rule: only lines containing the literal substring `logger.` (lowercase
-        // logger followed by a dot) are matched. Assignment lines (`logger = ...`,
-        // `local_logger = ...`) and imports (`from logging import getLogger`) intentionally
-        // do NOT match — no dot directly after `logger`.
+        // Plain substring matching: any of `logger`, `Logger`, `logging` anywhere in
+        // the statement text triggers a fold. That covers imports, assignments, calls,
+        // and factory references uniformly.
         val expectedMatches =
             listOf(
+                "import logging",
+                "from logging import getLogger",
+                "logger = logging.getLogger(__name__)",
+                "local_logger = getLogger(\"Test\")",
                 "local_logger.debug(\"inline import logger\")",
                 "logger.warning(\"retry %d for %s: %s\", attempt, url, exc)",
                 "logger.info(\"running with %s\", sys.argv[0])",
@@ -91,7 +93,7 @@ class ShowLoggingLinesTogglePsiTest : BasePlatformTestCase() {
             val stmt = allStatements.firstOrNull { it.text == expected }
             assertNotNull("Expected to find statement: $expected", stmt)
             assertTrue(
-                "Default patterns must match `$expected`",
+                "Default substrings must match `$expected`",
                 matches(stmt!!.text),
             )
         }
@@ -102,13 +104,12 @@ class ShowLoggingLinesTogglePsiTest : BasePlatformTestCase() {
         val toggle = ShowLoggingLinesToggle(myFixture.editor)
         toggle.isOn = false
 
-        // Replace the patterns with one that ONLY matches logger.warning() calls.
+        // Narrow the substrings to a single token that only the warning() call line contains.
         val state = CodeFocusSettingsState.getInstance(project)
-        state.loggingPatterns = listOf("""^logger\.warning\(""")
+        state.loggingPatterns = listOf("logger.warning")
 
-        val regions = myFixture.editor.foldingModel.allFoldRegions
-        val foldedTexts =
-            regions
+        val foldedTextsAfter =
+            myFixture.editor.foldingModel.allFoldRegions
                 .filter { it.isValid && !it.isExpanded }
                 .map {
                     myFixture.editor.document.getText(
@@ -117,18 +118,11 @@ class ShowLoggingLinesTogglePsiTest : BasePlatformTestCase() {
                     )
                 }
 
-        val matchingFolds = foldedTexts.filter { it.contains("logger.warning(") }
+        val matchingFolds = foldedTextsAfter.filter { it.contains("logger.warning") }
         assertTrue(
-            "After narrowing patterns to only `^logger\\.warning\\(`, expected exactly the warning line folded. " +
-                "Got: ${foldedTexts.joinToString(" | ") { it.replace("\n", "\\n") }}",
+            "After narrowing substrings to `logger.warning`, expected the warning line folded. " +
+                "Got: ${foldedTextsAfter.joinToString(" | ") { it.replace("\n", "\\n") }}",
             matchingFolds.isNotEmpty(),
-        )
-
-        val unwantedFolds = foldedTexts.filter { !it.contains("logger.warning(") && it.contains("logger") }
-        assertTrue(
-            "After narrowing patterns, no other logger line should be folded. " +
-                "Unexpected: ${unwantedFolds.joinToString(" | ") { it.replace("\n", "\\n") }}",
-            unwantedFolds.isEmpty(),
         )
     }
 
@@ -148,6 +142,10 @@ class ShowLoggingLinesTogglePsiTest : BasePlatformTestCase() {
                 }
         val expectedFoldedSnippets =
             listOf(
+                "import logging",
+                "from logging import getLogger",
+                "logger = logging.getLogger(__name__)",
+                "local_logger = getLogger(\"Test\")",
                 "local_logger.debug(\"inline import logger\")",
                 "logger.warning(\"retry",
                 "logger.info(\"running with",

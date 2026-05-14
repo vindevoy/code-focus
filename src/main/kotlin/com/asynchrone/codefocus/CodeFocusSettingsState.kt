@@ -14,11 +14,11 @@ import java.util.concurrent.CopyOnWriteArrayList
  * Distinct from [CodeFocusToggleState], which holds per-file toggle pill
  * state. This service holds **project-wide preferences** the user edits via
  * [CodeFocusConfigurable] (Settings → Tools → Code Focus). Today that is the
- * regex list used by [ShowLoggingLinesToggle] to identify logging lines;
+ * substring list used by [ShowLoggingLinesToggle] to identify logging lines;
  * future settings live alongside.
  *
- * Stored in the project's workspace.xml so the patterns survive editor
- * reopens, project reopens, and PyCharm restarts.
+ * Stored in the project's workspace.xml so the values survive editor reopens,
+ * project reopens, and PyCharm restarts.
  */
 @Service(Service.Level.PROJECT)
 @State(
@@ -27,7 +27,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 )
 class CodeFocusSettingsState : PersistentStateComponent<CodeFocusSettingsState.State> {
     class State {
-        /** Regex patterns matched against PSI statement text by Show Logging Lines. */
+        /** Plain (case-sensitive) substrings matched against PSI statement text. */
         var loggingPatterns: MutableList<String> = DEFAULT_LOGGING_PATTERNS.toMutableList()
     }
 
@@ -41,10 +41,12 @@ class CodeFocusSettingsState : PersistentStateComponent<CodeFocusSettingsState.S
     }
 
     /**
-     * The currently configured logging-line patterns. Falls back to
-     * [DEFAULT_LOGGING_PATTERNS] when the user has cleared the list. Setting
-     * fires [PatternsListener]s synchronously so subscribed UI components
-     * (e.g. open `ShowLoggingLinesToggle`s) can re-apply immediately.
+     * The currently configured logging-line substrings. Each entry is a literal
+     * substring (no regex); a line that contains any of them at any position is
+     * considered a logging line. Falls back to [DEFAULT_LOGGING_PATTERNS] when
+     * the user has cleared the list. The setter fires [PatternsListener]s
+     * synchronously so subscribed UI components (e.g. open
+     * `ShowLoggingLinesToggle`s) can re-apply immediately.
      */
     var loggingPatterns: List<String>
         get() = state.loggingPatterns.ifEmpty { DEFAULT_LOGGING_PATTERNS }
@@ -67,13 +69,24 @@ class CodeFocusSettingsState : PersistentStateComponent<CodeFocusSettingsState.S
 
     companion object {
         /**
-         * Out-of-the-box patterns inherited from the original hardcoded list in
-         * [ShowLoggingLinesToggle]. Each line of the user's configuration is one
-         * pattern. The user can extend, replace, or restore these from the
-         * Configurable's "Restore defaults" button.
+         * Default substrings the Configurable seeds the Settings text area with via
+         * "Restore defaults". Matching is plain `String.contains` (case-sensitive),
+         * no regex — if any of these tokens appears anywhere in the statement text,
+         * the line is folded.
+         *
+         *  - `logger` — covers `logger.x(...)`, `self.logger.x(...)`, `_logger`,
+         *    `my_logger`, `local_logger`, every variable named after the logger.
+         *  - `Logger` — covers `Logger`, `LoggerFactory`, `getLogger`, every
+         *    PascalCase logger reference (class names, factory methods).
+         *  - `logging` — covers `import logging` and `from logging import …`,
+         *    plus any other use of the standard-library module name.
          */
         val DEFAULT_LOGGING_PATTERNS: List<String> =
-            listOf("""logger\.""")
+            listOf(
+                "logger",
+                "Logger",
+                "logging",
+            )
 
         fun getInstance(project: Project): CodeFocusSettingsState = project.getService(CodeFocusSettingsState::class.java)
     }

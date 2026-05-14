@@ -142,8 +142,8 @@ class ShowLoggingLinesToggle(
                 return
             }
         val model = ed.foldingModel
-        val patterns = loggingRegexes()
-        LOG.warn("[CodeFocus] applyToEditor: ${patterns.size} active regex patterns: ${patterns.map { it.pattern }}")
+        val needles = loggingNeedles()
+        LOG.warn("[CodeFocus] applyToEditor: ${needles.size} active substrings: $needles")
         model.runBatchFoldingOperation {
             // Restore IDE-managed folds we previously collapsed.
             val toggled = toggledFor(ed)
@@ -290,18 +290,15 @@ class ShowLoggingLinesToggle(
 
     private fun looksLikeLogging(stmt: PsiElement): Boolean {
         val text = stmt.text
-        for (regex in loggingRegexes()) {
-            if (regex.containsMatchIn(text)) return true
+        for (needle in loggingNeedles()) {
+            if (needle.isNotEmpty() && text.contains(needle)) return true
         }
         return false
     }
 
-    private fun loggingRegexes(): List<Regex> {
-        val project = editor?.project ?: return DEFAULT_LOGGING_REGEXES
-        val patterns = CodeFocusSettingsState.getInstance(project).loggingPatterns
-        return patterns.mapNotNull {
-            runCatching { Regex(it) }.getOrNull()
-        }
+    private fun loggingNeedles(): List<String> {
+        val project = editor?.project ?: return CodeFocusSettingsState.DEFAULT_LOGGING_PATTERNS
+        return CodeFocusSettingsState.getInstance(project).loggingPatterns
     }
 
     private fun expandRange(
@@ -363,11 +360,5 @@ class ShowLoggingLinesToggle(
         private val REGIONS_KEY = Key.create<MutableList<FoldRegion>>("codefocus.showLoggingLines.regions")
         private val TOGGLED_KEY = Key.create<MutableList<FoldRegion>>("codefocus.showLoggingLines.toggled")
         private val LOG = Logger.getInstance(ShowLoggingLinesToggle::class.java)
-
-        // Fallback used when the toggle has no project context (e.g. unit tests
-        // that construct the toggle without an editor). Production code path
-        // reads the user-configurable list from CodeFocusSettingsState.
-        private val DEFAULT_LOGGING_REGEXES: List<Regex> =
-            CodeFocusSettingsState.DEFAULT_LOGGING_PATTERNS.map { Regex(it) }
     }
 }
