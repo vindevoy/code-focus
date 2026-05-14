@@ -4,6 +4,7 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.ui.JBColor
+import com.intellij.util.ui.JBFont
 import com.intellij.util.ui.JBUI
 import java.awt.Color
 import java.awt.Cursor
@@ -53,6 +54,7 @@ class FormatButton(
             toolTipText = CodeFocusBundle.message("button.format.tooltip")
             label.border = JBUI.Borders.empty(4, 10)
             label.foreground = JBColor.foreground()
+            label.font = JBFont.small()
             add(BackgroundPill(label))
 
             val click =

@@ -9,6 +9,7 @@ import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiElement
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.ui.JBColor
+import com.intellij.util.ui.JBFont
 import com.intellij.util.ui.JBUI
 import com.jetbrains.python.psi.PyFromImportStatement
 import com.jetbrains.python.psi.PyImportStatement
@@ -55,6 +56,7 @@ class ShowImportsToggle(
         isOpaque = false
         border = JBUI.Borders.empty(1, 2)
         cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+        label.font = JBFont.small()
         add(label)
         add(pill)
 
@@ -257,7 +259,7 @@ class ShowImportsToggle(
         var isOn: Boolean = true
 
         init {
-            val size = Dimension(JBUI.scale(30), JBUI.scale(16))
+            val size = Dimension(JBUI.scale(24), JBUI.scale(12))
             preferredSize = size
             minimumSize = size
             maximumSize = size
@@ -268,14 +270,15 @@ class ShowImportsToggle(
             val g2 = g.create() as Graphics2D
             try {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
-                val arc = JBUI.scale(6)
+                val arc = JBUI.scale(2)
                 g2.color = if (isOn) ON_COLOR else OFF_COLOR
                 g2.fillRoundRect(0, 0, width - 1, height - 1, arc, arc)
-                val inset = JBUI.scale(2)
-                val knob = height - inset * 2
-                val knobX = if (isOn) width - knob - inset else inset
+                val knob = JBUI.scale(8)
+                val knobInset = (height - knob) / 2
+                val knobX = if (isOn) width - knob - knobInset else knobInset
+                val knobY = (height - knob) / 2
                 g2.color = JBColor.foreground()
-                g2.fillRoundRect(knobX, inset, knob, knob, JBUI.scale(6), JBUI.scale(6))
+                g2.fillRoundRect(knobX, knobY, knob, knob, arc, arc)
             } finally {
                 g2.dispose()
             }
