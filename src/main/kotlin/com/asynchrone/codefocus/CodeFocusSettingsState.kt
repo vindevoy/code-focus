@@ -76,8 +76,8 @@ class CodeFocusSettingsState : PersistentStateComponent<CodeFocusSettingsState.S
             listOf(
                 """^\s*import\s+logging\b""",
                 """^\s*from\s+logging\b""",
-                """^\s*from\s+\S+\s+import\s+[^#\n]*\b[Ll]ogger\w*\b""",
-                """^\s*import\s+[^#\n]*\b[Ll]ogger\w*\b""",
+                """^\s*from\s+\S+\s+import\s+[^#\n]*\b\w*[Ll]ogger\w*\b""",
+                """^\s*import\s+[^#\n]*\b\w*[Ll]ogger\w*\b""",
                 """^\s*(?:\w+\.)*\w*[Ll]ogger\w*\s*=""",
                 """^\s*(?:\w+\.)*\w*[Ll]ogger\w*\.\w+\(""",
             )
