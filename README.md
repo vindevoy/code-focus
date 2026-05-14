@@ -1,5 +1,7 @@
 # CODE FOCUS - A PyCharm plugin
 
+![Code Focus toggle bar above a Python editor](resources/images/plugin.png)
+
 
 ## Author
 
