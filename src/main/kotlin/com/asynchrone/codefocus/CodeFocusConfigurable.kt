@@ -3,7 +3,6 @@ package com.asynchrone.codefocus
 import com.intellij.openapi.options.Configurable
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogPanel
-import com.intellij.ui.EditorNotifications
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTextArea
@@ -13,6 +12,7 @@ import javax.swing.BoxLayout
 import javax.swing.JButton
 import javax.swing.JComponent
 import javax.swing.JPanel
+import javax.swing.ScrollPaneConstants
 
 /**
  * Project Settings → Tools → Code Focus.
@@ -42,9 +42,12 @@ class CodeFocusConfigurable(
             }
         patternsArea = area
 
-        val scroll = JBScrollPane(area)
+        val scroll =
+            JBScrollPane(area).apply {
+                horizontalScrollBarPolicy = ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER
+            }
         val description =
-            JBLabel(CodeFocusBundle.message("settings.loggingPatterns.description")).apply {
+            JBLabel("<html>" + CodeFocusBundle.message("settings.loggingPatterns.description") + "</html>").apply {
                 border = JBUI.Borders.emptyBottom(8)
                 setAllowAutoWrapping(true)
             }
@@ -88,7 +91,6 @@ class CodeFocusConfigurable(
     override fun apply() {
         val area = patternsArea ?: return
         CodeFocusSettingsState.getInstance(project).loggingPatterns = area.text.toPatternList()
-        EditorNotifications.getInstance(project).updateAllNotifications()
     }
 
     override fun reset() {

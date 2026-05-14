@@ -27,6 +27,8 @@ import java.awt.event.MouseEvent
 import javax.swing.JComponent
 import javax.swing.JLabel
 import javax.swing.JPanel
+import javax.swing.event.AncestorEvent
+import javax.swing.event.AncestorListener
 
 /**
  * Slide-toggle pill for the "Show Logging Lines" switch.
@@ -76,6 +78,24 @@ class ShowLoggingLinesToggle(
         pill.isOn = initial
         updateTooltip()
         if (!initial) applyToEditor()
+
+        val project = editor?.project
+        if (project != null) {
+            val state = CodeFocusSettingsState.getInstance(project)
+            val patternsListener = CodeFocusSettingsState.PatternsListener { applyToEditor() }
+            state.addPatternsListener(patternsListener)
+            addAncestorListener(
+                object : AncestorListener {
+                    override fun ancestorRemoved(event: AncestorEvent) {
+                        state.removePatternsListener(patternsListener)
+                    }
+
+                    override fun ancestorAdded(event: AncestorEvent) {}
+
+                    override fun ancestorMoved(event: AncestorEvent) {}
+                },
+            )
+        }
     }
 
     private fun loadState(): Boolean? {
