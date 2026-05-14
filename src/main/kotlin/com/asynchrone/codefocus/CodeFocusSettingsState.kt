@@ -61,8 +61,8 @@ class CodeFocusSettingsState : PersistentStateComponent<CodeFocusSettingsState.S
                 """^\s*from\s+logging\b""",
                 """^\s*from\s+\S+\s+import\s+[^#\n]*\b[Ll]ogger\w*\b""",
                 """^\s*import\s+[^#\n]*\b[Ll]ogger\w*\b""",
-                """^\s*\w*[Ll]ogger\w*\s*=""",
-                """^\s*\w*[Ll]ogger\w*\.\w+\(""",
+                """^\s*(?:\w+\.)*\w*[Ll]ogger\w*\s*=""",
+                """^\s*(?:\w+\.)*\w*[Ll]ogger\w*\.\w+\(""",
             )
 
         fun getInstance(project: Project): CodeFocusSettingsState = project.getService(CodeFocusSettingsState::class.java)
