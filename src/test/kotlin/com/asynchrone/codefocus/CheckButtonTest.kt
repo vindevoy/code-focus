@@ -9,10 +9,10 @@ import javax.swing.JLabel
 
 class CheckButtonTest {
     @Test
-    fun `button shows the Check label when ruff is resolvable`() {
+    fun `button shows the Fix label when ruff is resolvable`() {
         val button = CheckButton(ruffResolver = { "/fake/ruff" })
-        val label = collectLabels(button).firstOrNull { it.text == "Check" }
-        assertNotNull(label, "Button should contain a JLabel reading Check")
+        val label = collectLabels(button).firstOrNull { it.text == "Fix" }
+        assertNotNull(label, "Button should contain a JLabel reading Fix")
     }
 
     @Test
