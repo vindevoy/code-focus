@@ -7,6 +7,7 @@
 
 - Name:               Yves Vindevogel
 - GitLab handle:      vindevoy
+- GitHub handle:      vindevoy
 - E-mail:             yves.vindevogel@asynchrone.com
 
 
@@ -66,7 +67,9 @@ This plugin is written in Kotlin, as this is the preferred language for JetBrain
 
 ## AI
 
+- All code was written by Claude.
 - Although completely written by Claude, all code was reviewed by a human.
+- Claude was used to generate the code. Claude did not invent, nor design the plugin.
 - This project serves as an example of vibe coding with Claude CLI. All interaction is documented in each issue.
 - This is a study project for me ([vindevoy](https://gitlab.com/vindevoy)) on how interaction with Claude CLI can work best.
 - I have no experience in Kotlin, but 30 years of programming experience.
