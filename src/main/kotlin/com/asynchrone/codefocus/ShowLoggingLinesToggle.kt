@@ -1,6 +1,5 @@
 package com.asynchrone.codefocus
 
-import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.FoldRegion
 import com.intellij.openapi.util.Key
@@ -48,7 +47,6 @@ class ShowLoggingLinesToggle(
     var isOn: Boolean
         get() = pill.isOn
         set(value) {
-            LOG.warn("[CodeFocus] isOn setter: $isOn -> $value (editor=$editor)")
             if (pill.isOn == value) return
             pill.isOn = value
             pill.repaint()
@@ -134,19 +132,11 @@ class ShowLoggingLinesToggle(
     fun reApply() = applyToEditor()
 
     private fun applyToEditor() {
-        LOG.warn("[CodeFocus] applyToEditor: ENTER (pill.isOn=${pill.isOn}, editor=$editor)")
-        val ed =
-            editor ?: run {
-                LOG.warn("[CodeFocus] applyToEditor: editor is null, returning")
-                return
-            }
+        val ed = editor ?: return
         val model = ed.foldingModel
-        val needles = loggingNeedles()
-        LOG.warn("[CodeFocus] applyToEditor: ${needles.size} active substrings: $needles")
         model.runBatchFoldingOperation {
             // Restore IDE-managed folds we previously collapsed.
             val toggled = toggledFor(ed)
-            LOG.warn("[CodeFocus] applyToEditor: re-expanding ${toggled.count { it.isValid }} previously-collapsed IDE folds")
             for (r in toggled) {
                 if (r.isValid) r.isExpanded = true
             }
@@ -154,27 +144,17 @@ class ShowLoggingLinesToggle(
 
             // Remove folds we ourselves created.
             val regions = regionsFor(ed)
-            LOG.warn("[CodeFocus] applyToEditor: removing ${regions.count { it.isValid }} previously-created folds")
             for (r in regions) {
                 if (r.isValid) model.removeFoldRegion(r)
             }
             regions.clear()
 
-            if (pill.isOn) {
-                LOG.warn("[CodeFocus] applyToEditor: pill is ON, exiting (no folds added)")
-                return@runBatchFoldingOperation
-            }
-            val project =
-                ed.project ?: run {
-                    LOG.warn("[CodeFocus] applyToEditor: editor.project is null, exiting")
-                    return@runBatchFoldingOperation
-                }
+            if (pill.isOn) return@runBatchFoldingOperation
+
+            val project = ed.project ?: return@runBatchFoldingOperation
             val psiFile =
-                PsiDocumentManager.getInstance(project).getPsiFile(ed.document) ?: run {
-                    LOG.warn("[CodeFocus] applyToEditor: psiFile is null, exiting")
-                    return@runBatchFoldingOperation
-                }
-            LOG.warn("[CodeFocus] applyToEditor: psiFile=${psiFile.name}")
+                PsiDocumentManager.getInstance(project).getPsiFile(ed.document)
+                    ?: return@runBatchFoldingOperation
 
             val ranges = mutableListOf<TextRange>()
             val statementTypes =
@@ -184,33 +164,15 @@ class ShowLoggingLinesToggle(
                     PyAssignmentStatement::class.java,
                     PyExpressionStatement::class.java,
                 )
-            val allStatements = PsiTreeUtil.findChildrenOfAnyType(psiFile, *statementTypes)
-            LOG.warn("[CodeFocus] applyToEditor: PSI walk found ${allStatements.size} statements of target types")
-            for (stmt in allStatements) {
-                val text = stmt.text
-                val preview = text.lineSequence().firstOrNull()?.take(80) ?: ""
-                val matched = looksLikeLogging(stmt)
-                LOG.warn(
-                    "[CodeFocus]   stmt class=${stmt.javaClass.simpleName} " +
-                        "range=${stmt.textRange} matched=$matched text=`$preview`",
-                )
-                if (matched) ranges += stmt.textRange
+            for (stmt in PsiTreeUtil.findChildrenOfAnyType(psiFile, *statementTypes)) {
+                if (looksLikeLogging(stmt)) ranges += stmt.textRange
             }
-            LOG.warn("[CodeFocus] applyToEditor: ${ranges.size} statements matched the regex set")
-
             ranges.sortBy { it.startOffset }
 
-            var added = 0
-            var collapsed = 0
-            var alreadyCollapsed = 0
-            var failed = 0
             var previousFoldEnd = 0
             for (range in ranges) {
                 val (lineStart, lineEnd) = FoldExpansion.expand(ed.document, range, previousFoldEnd)
-                if (lineStart >= lineEnd) {
-                    LOG.warn("[CodeFocus]   skipping empty range $range -> ($lineStart,$lineEnd)")
-                    continue
-                }
+                if (lineStart >= lineEnd) continue
 
                 // Step 1: look for an existing fold region at the line range or the statement
                 // range. PyCharm pre-creates folds for many import / call statements; if we find
@@ -228,17 +190,6 @@ class ShowLoggingLinesToggle(
                     if (existing.isExpanded) {
                         existing.isExpanded = false
                         toggled.add(existing)
-                        collapsed++
-                        LOG.warn(
-                            "[CodeFocus]   collapsed existing IDE fold " +
-                                "[${existing.startOffset},${existing.endOffset}]",
-                        )
-                    } else {
-                        alreadyCollapsed++
-                        LOG.warn(
-                            "[CodeFocus]   existing IDE fold already collapsed " +
-                                "[${existing.startOffset},${existing.endOffset}] (no action)",
-                        )
                     }
                     previousFoldEnd = existing.endOffset
                     continue
@@ -251,35 +202,11 @@ class ShowLoggingLinesToggle(
                     model.addFoldRegion(lineStart, lineEnd, "")
                         ?: model.addFoldRegion(lineStart, range.endOffset, "")
                         ?: model.addFoldRegion(range.startOffset, range.endOffset, "")
-                if (region == null) {
-                    val overlapping =
-                        model.allFoldRegions.filter {
-                            it.isValid && (it.startOffset < lineEnd && it.endOffset > lineStart)
-                        }
-                    LOG.warn(
-                        "[CodeFocus]   addFoldRegion FAILED for ($lineStart,$lineEnd). " +
-                            "Overlapping existing folds: ${overlapping.size}: " +
-                            overlapping.joinToString(" | ") {
-                                "[${it.startOffset},${it.endOffset}, expanded=${it.isExpanded}]"
-                            },
-                    )
-                    failed++
-                    continue
-                }
+                        ?: continue
                 region.isExpanded = false
                 regions.add(region)
                 previousFoldEnd = region.endOffset
-                added++
-                LOG.warn(
-                    "[CodeFocus]   addFoldRegion OK: " +
-                        "[${region.startOffset},${region.endOffset}], isExpanded=false",
-                )
             }
-            LOG.warn(
-                "[CodeFocus] applyToEditor: DONE collapsed=$collapsed alreadyCollapsed=$alreadyCollapsed " +
-                    "added=$added failed=$failed " +
-                    "(${regions.size} created folds, ${toggled.size} IDE folds toggled)",
-            )
         }
     }
 
@@ -344,6 +271,5 @@ class ShowLoggingLinesToggle(
         private val STATE_KEY = Key.create<Boolean>("codefocus.showLoggingLines.isOn")
         private val REGIONS_KEY = Key.create<MutableList<FoldRegion>>("codefocus.showLoggingLines.regions")
         private val TOGGLED_KEY = Key.create<MutableList<FoldRegion>>("codefocus.showLoggingLines.toggled")
-        private val LOG = Logger.getInstance(ShowLoggingLinesToggle::class.java)
     }
 }
