@@ -57,7 +57,7 @@ class ShowCommentsToggle(
         isOpaque = false
         border = JBUI.Borders.empty(1, 2)
         cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
-        label.font = JBFont.small()
+        label.font = JBFont.label()
         add(label)
         add(pill)
 
@@ -134,9 +134,12 @@ class ShowCommentsToggle(
                     ranges += stmt.textRange
                 }
             }
+            ranges.sortBy { it.startOffset }
+
+            var previousFoldEnd = 0
 
             for (range in ranges) {
-                val (start, end) = expandRange(ed.document, range)
+                val (start, end) = FoldExpansion.expand(ed.document, range, previousFoldEnd)
                 if (start >= end) continue
                 val coveredByCollapsed =
                     model.allFoldRegions.any {
@@ -150,6 +153,7 @@ class ShowCommentsToggle(
                 if (region != null) {
                     region.isExpanded = false
                     regions.add(region)
+                    previousFoldEnd = end
                 }
             }
         }
@@ -193,25 +197,6 @@ class ShowCommentsToggle(
         return hasContent
     }
 
-    private fun expandRange(
-        document: Document,
-        range: TextRange,
-    ): Pair<Int, Int> {
-        val lineStart = document.getLineStartOffset(document.getLineNumber(range.startOffset))
-        val prefix = document.getText(TextRange(lineStart, range.startOffset))
-        if (prefix.any { !it.isWhitespace() }) {
-            return range.startOffset to range.endOffset
-        }
-        val end = range.endOffset
-        val withNewline =
-            if (end < document.textLength && document.charsSequence[end] == '\n') {
-                end + 1
-            } else {
-                end
-            }
-        return lineStart to withNewline
-    }
-
     private class Pill : JComponent() {
         var isOn: Boolean = true
 
@@ -227,7 +212,7 @@ class ShowCommentsToggle(
             val g2 = g.create() as Graphics2D
             try {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
-                val arc = JBUI.scale(2)
+                val arc = JBUI.scale(6)
                 g2.color = if (isOn) ON_COLOR else OFF_COLOR
                 g2.fillRoundRect(0, 0, width - 1, height - 1, arc, arc)
                 val knob = JBUI.scale(8)

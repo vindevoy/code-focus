@@ -129,6 +129,33 @@ class ShowLoggingLinesTogglePsiTest : BasePlatformTestCase() {
         )
     }
 
+    fun `test issue 52 - blank lines around a standalone logger line fold get absorbed`() {
+        val fixture = "x = 1\n\nlogger.info(\"hi\")\n\ny = 2\n"
+        myFixture.configureByText("issue52-snippet.py", fixture)
+        val toggle = ShowLoggingLinesToggle(myFixture.editor)
+        toggle.isOn = false
+
+        val document = myFixture.editor.document
+        val collapsed =
+            myFixture.editor.foldingModel.allFoldRegions
+                .filter { it.isValid && !it.isExpanded }
+
+        assertEquals(
+            "Expected exactly one collapsed logger fold for `$fixture`.",
+            1,
+            collapsed.size,
+        )
+
+        val fold = collapsed.single()
+        val text = document.getText(TextRange(fold.startOffset, fold.endOffset))
+
+        assertEquals(
+            "Fold should swallow the blank line above and the blank line below the logger statement.",
+            "\nlogger.info(\"hi\")\n\n",
+            text,
+        )
+    }
+
     fun `test toggle off folds every logger line in the comprehensive real fixture`() {
         myFixture.configureByText("test.py", realFixture)
         val toggle = ShowLoggingLinesToggle(myFixture.editor)

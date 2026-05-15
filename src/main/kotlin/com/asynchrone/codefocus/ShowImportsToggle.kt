@@ -56,7 +56,7 @@ class ShowImportsToggle(
         isOpaque = false
         border = JBUI.Borders.empty(1, 2)
         cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
-        label.font = JBFont.small()
+        label.font = JBFont.label()
         add(label)
         add(pill)
 
@@ -133,27 +133,35 @@ class ShowImportsToggle(
 
             if (pill.isOn) return@runBatchFoldingOperation
 
+            var previousFoldEnd = 0
+
             for (group in topLevelImportGroups(psiFile)) {
-                val (start, end) = importGroupRange(ed.document, group)
+                val (start, end) = importGroupRange(ed.document, group, previousFoldEnd)
                 if (start >= end) continue
                 if (alreadyCovered(model, start, end)) continue
                 val region = model.addFoldRegion(start, end, "") ?: continue
                 region.isExpanded = false
                 regions.add(region)
+                previousFoldEnd = end
             }
 
-            for (stmt in PsiTreeUtil.findChildrenOfAnyType(
-                psiFile,
-                PyImportStatement::class.java,
-                PyFromImportStatement::class.java,
-            )) {
-                if (stmt.parent === psiFile) continue
-                val (start, end) = expandRange(ed.document, stmt.textRange)
+            val nestedImports =
+                PsiTreeUtil
+                    .findChildrenOfAnyType(
+                        psiFile,
+                        PyImportStatement::class.java,
+                        PyFromImportStatement::class.java,
+                    ).filter { it.parent !== psiFile }
+                    .sortedBy { it.textRange.startOffset }
+
+            for (stmt in nestedImports) {
+                val (start, end) = FoldExpansion.expand(ed.document, stmt.textRange, previousFoldEnd)
                 if (start >= end) continue
                 if (alreadyCovered(model, start, end)) continue
                 val region = model.addFoldRegion(start, end, "") ?: continue
                 region.isExpanded = false
                 regions.add(region)
+                previousFoldEnd = end
             }
         }
     }
@@ -177,11 +185,26 @@ class ShowImportsToggle(
     private fun importGroupRange(
         document: com.intellij.openapi.editor.Document,
         group: List<PyImportStatementBase>,
+        previousFoldEnd: Int,
     ): Pair<Int, Int> {
         val first = group.first()
         val last = group.last()
-        val startLine = document.getLineNumber(first.textRange.startOffset)
+        var startLine = document.getLineNumber(first.textRange.startOffset)
         var endLine = document.getLineNumber((last.textRange.endOffset - 1).coerceAtLeast(first.textRange.startOffset))
+        while (startLine > 0) {
+            val candidate = startLine - 1
+            val candidateStart = document.getLineStartOffset(candidate)
+            if (candidateStart < previousFoldEnd) break
+            val text =
+                document.getText(
+                    TextRange(
+                        candidateStart,
+                        document.getLineEndOffset(candidate),
+                    ),
+                )
+            if (!text.all { it.isWhitespace() }) break
+            startLine = candidate
+        }
         while (endLine + 1 < document.lineCount) {
             val nextLine = endLine + 1
             val text =
@@ -236,25 +259,6 @@ class ShowImportsToggle(
         return hasImport
     }
 
-    private fun expandRange(
-        document: Document,
-        range: TextRange,
-    ): Pair<Int, Int> {
-        val lineStart = document.getLineStartOffset(document.getLineNumber(range.startOffset))
-        val prefix = document.getText(TextRange(lineStart, range.startOffset))
-        if (prefix.any { !it.isWhitespace() }) {
-            return range.startOffset to range.endOffset
-        }
-        val end = range.endOffset
-        val withNewline =
-            if (end < document.textLength && document.charsSequence[end] == '\n') {
-                end + 1
-            } else {
-                end
-            }
-        return lineStart to withNewline
-    }
-
     private class Pill : JComponent() {
         var isOn: Boolean = true
 
@@ -270,7 +274,7 @@ class ShowImportsToggle(
             val g2 = g.create() as Graphics2D
             try {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
-                val arc = JBUI.scale(2)
+                val arc = JBUI.scale(6)
                 g2.color = if (isOn) ON_COLOR else OFF_COLOR
                 g2.fillRoundRect(0, 0, width - 1, height - 1, arc, arc)
                 val knob = JBUI.scale(8)
