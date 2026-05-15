@@ -1,7 +1,6 @@
 package com.asynchrone.codefocus
 
 import com.intellij.openapi.diagnostic.Logger
-import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.FoldRegion
 import com.intellij.openapi.util.Key
@@ -199,12 +198,15 @@ class ShowLoggingLinesToggle(
             }
             LOG.warn("[CodeFocus] applyToEditor: ${ranges.size} statements matched the regex set")
 
+            ranges.sortBy { it.startOffset }
+
             var added = 0
             var collapsed = 0
             var alreadyCollapsed = 0
             var failed = 0
+            var previousFoldEnd = 0
             for (range in ranges) {
-                val (lineStart, lineEnd) = expandRange(ed.document, range)
+                val (lineStart, lineEnd) = FoldExpansion.expand(ed.document, range, previousFoldEnd)
                 if (lineStart >= lineEnd) {
                     LOG.warn("[CodeFocus]   skipping empty range $range -> ($lineStart,$lineEnd)")
                     continue
@@ -238,6 +240,7 @@ class ShowLoggingLinesToggle(
                                 "[${existing.startOffset},${existing.endOffset}] (no action)",
                         )
                     }
+                    previousFoldEnd = existing.endOffset
                     continue
                 }
 
@@ -265,6 +268,7 @@ class ShowLoggingLinesToggle(
                 }
                 region.isExpanded = false
                 regions.add(region)
+                previousFoldEnd = region.endOffset
                 added++
                 LOG.warn(
                     "[CodeFocus]   addFoldRegion OK: " +
@@ -299,25 +303,6 @@ class ShowLoggingLinesToggle(
     private fun loggingNeedles(): List<String> {
         val project = editor?.project ?: return CodeFocusSettingsState.DEFAULT_LOGGING_PATTERNS
         return CodeFocusSettingsState.getInstance(project).loggingPatterns
-    }
-
-    private fun expandRange(
-        document: Document,
-        range: TextRange,
-    ): Pair<Int, Int> {
-        val lineStart = document.getLineStartOffset(document.getLineNumber(range.startOffset))
-        val prefix = document.getText(TextRange(lineStart, range.startOffset))
-        if (prefix.any { !it.isWhitespace() }) {
-            return range.startOffset to range.endOffset
-        }
-        val end = range.endOffset
-        val withNewline =
-            if (end < document.textLength && document.charsSequence[end] == '\n') {
-                end + 1
-            } else {
-                end
-            }
-        return lineStart to withNewline
     }
 
     private class Pill : JComponent() {

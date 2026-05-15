@@ -65,6 +65,33 @@ class ShowCommentsTogglePsiTest : BasePlatformTestCase() {
         }
     }
 
+    fun `test issue 52 - blank lines around a standalone comment fold get absorbed`() {
+        val fixture = "x = 1\n\n# foldable comment\n\ny = 2\n"
+        myFixture.configureByText("issue52-snippet.py", fixture)
+        val toggle = ShowCommentsToggle(myFixture.editor)
+        toggle.isOn = false
+
+        val document = myFixture.editor.document
+        val collapsed =
+            myFixture.editor.foldingModel.allFoldRegions
+                .filter { it.isValid && !it.isExpanded }
+
+        assertEquals(
+            "Expected exactly one collapsed comment fold for `$fixture`.",
+            1,
+            collapsed.size,
+        )
+
+        val fold = collapsed.single()
+        val text = document.getText(TextRange(fold.startOffset, fold.endOffset))
+
+        assertEquals(
+            "Fold should swallow the blank line above and the blank line below the comment.",
+            "\n# foldable comment\n\n",
+            text,
+        )
+    }
+
     fun `test real fixture - toggle off folds the standard comment shapes`() {
         myFixture.configureByText("test.py", realFixture)
         val toggle = ShowCommentsToggle(myFixture.editor)
