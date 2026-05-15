@@ -61,7 +61,7 @@ class ShowLoggingLinesToggle(
         isOpaque = false
         border = JBUI.Borders.empty(1, 2)
         cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
-        label.font = JBFont.small()
+        label.font = JBFont.label()
         add(label)
         add(pill)
 

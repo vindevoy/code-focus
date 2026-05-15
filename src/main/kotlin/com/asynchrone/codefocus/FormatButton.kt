@@ -54,7 +54,7 @@ class FormatButton(
             toolTipText = CodeFocusBundle.message("button.format.tooltip")
             label.border = JBUI.Borders.empty(4, 10)
             label.foreground = JBColor.foreground()
-            label.font = JBFont.small()
+            label.font = JBFont.label()
             add(BackgroundPill(label))
 
             val click =
