@@ -212,7 +212,7 @@ class ShowCommentsToggle(
             val g2 = g.create() as Graphics2D
             try {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
-                val arc = JBUI.scale(2)
+                val arc = JBUI.scale(6)
                 g2.color = if (isOn) ON_COLOR else OFF_COLOR
                 g2.fillRoundRect(0, 0, width - 1, height - 1, arc, arc)
                 val knob = JBUI.scale(8)
