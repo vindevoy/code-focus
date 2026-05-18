@@ -113,7 +113,7 @@ This plugin is written in Kotlin, as this is the preferred language for JetBrain
 
 ## Feedback
 
-Issues and feature requests live on GitLab: https://gitlab.com/asynchrone/kotlin/code-focus/-/issues
+Issues and feature requests live on GitHub: https://github.com/vindevoy/code-focus/issues
 
 
 ## License
